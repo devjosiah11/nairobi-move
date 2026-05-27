@@ -1,0 +1,12 @@
+{
+  "name": "@nairobi-move/utils",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "peerDependencies": {
+    "africastalking": "^0.6.0",
+    "@nairobi-move/db": "*"
+  }
+}

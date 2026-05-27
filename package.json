@@ -1,0 +1,19 @@
+{
+  "name": "nairobi-move",
+  "private": true,
+  "workspaces": [
+    "shared/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w sacco-dashboard\" \"npm run dev -w boda-dispatch\" \"npm run dev -w registration\" \"npm run dev -w matatu-pulse\"",
+    "dev:sacco": "npm run dev -w sacco-dashboard",
+    "dev:boda": "npm run dev -w boda-dispatch",
+    "dev:reg": "npm run dev -w registration",
+    "dev:matatu": "npm run dev -w matatu-pulse",
+    "dev:landing": "npm run dev -w landing"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

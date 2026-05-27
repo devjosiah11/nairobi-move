@@ -1,0 +1,11 @@
+{
+  "name": "@nairobi-move/db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./client.ts",
+  "types": "./client.ts",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}

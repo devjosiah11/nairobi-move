@@ -1,0 +1,18 @@
+# NairobiMove - Railway Deployment Configuration
+# Root configuration for monorepo deployment
+
+[build]
+builder = "nixpacks"
+
+# Global environment variables
+[variables]
+NODE_ENV = "production"
+
+# Deployment configuration
+[deploy]
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# Individual app services will be configured in their own railway.toml files
+# This file serves as the root configuration for the monorepo
