@@ -3,16 +3,13 @@
 # because Railway reads THIS file (repo root), not the per-app railway.toml files.
 #
 # Per-service commands:
-#   matatu-pulse:    build = "npm install && npm run build -w matatu-pulse"   start = "npm start -w matatu-pulse"
-#   sacco-dashboard: build = "npm install && npm run build -w sacco-dashboard" start = "npm start -w sacco-dashboard"
-#   boda-dispatch:   build = "npm install && npm run build -w boda-dispatch"   start = "npm start -w boda-dispatch"
-#   registration:    build = "npm install && npm run build -w registration"     start = "npm start -w registration"
+#   matatu-pulse:    build = "npm install --include=dev && npm run build -w matatu-pulse"   start = "npm start -w matatu-pulse"
+#   sacco-dashboard: build = "npm install --include=dev && npm run build -w sacco-dashboard" start = "npm start -w sacco-dashboard"
+#   boda-dispatch:   build = "npm install --include=dev && npm run build -w boda-dispatch"   start = "npm start -w boda-dispatch"
+#   registration:    build = "npm install --include=dev && npm run build -w registration"     start = "npm start -w registration"
 
 [build]
 builder = "nixpacks"
-
-[variables]
-NODE_ENV = "production"
 
 [deploy]
 healthcheckTimeout = 100
