@@ -325,6 +325,27 @@ function Index() {
         bg="bg-navy"
       />
 
+      {/* WAYBILL */}
+      <ModuleSection
+        id="waybill"
+        eyebrow="Module 03 · Waybill"
+        eyebrowColor="text-purple-400"
+        accentRing="ring-purple-400/40"
+        title="Stop leaking 20–40% of your fare revenue."
+        body="Every conductor, driver and passenger becomes part of the audit. No smartphones. No GPS hardware. No apps. Just the phones your crew already own and a USSD code."
+        bullets={[
+          "Conductors dial *384*50151# to log each trip's passenger count + cash declared",
+          "System compares against the route fare matrix — variance flagged in seconds",
+          "Passengers SMS PAID <plate> <amount> to independently verify fares",
+          "Passengers earn KES 2 airtime per report, KES 10 if they flag an anomaly",
+          "SACCO sees the leakage map by vehicle, conductor and day",
+        ]}
+        cta={undefined}
+        visual={<WaybillVisual />}
+        flip={false}
+        bg="bg-navy-2"
+      />
+
       {/* HOW IT WORKS */}
       <section id="how" className="relative py-28 bg-navy">
         <div className="max-w-7xl mx-auto px-6">
@@ -536,6 +557,35 @@ function Index() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function WaybillVisual() {
+  return (
+    <div className="space-y-3 font-mono text-sm">
+      {/* Conductor USSD strip */}
+      <div className="rounded-xl border border-purple-400/30 bg-purple-400/5 p-4">
+        <div className="text-purple-400/60 text-xs mb-2">Conductor · dials *384*50151#</div>
+        <div className="text-white/80">Trip started: CBD → Rongai (PEAK)</div>
+        <div className="mt-1 text-white/50 text-xs">Passengers: 42 · Declared: KES 4,200</div>
+        <div className="mt-1 text-white/50 text-xs">Expected: KES 4,620 · Variance: <span className="text-red-400">-9.1% ⚠ FLAGGED</span></div>
+      </div>
+      {/* Passenger SMS strip */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="text-white/40 text-xs mb-2">Passenger · SMS to 50151</div>
+        <div className="text-white/80">PAID KBZ 771R 100</div>
+        <div className="mt-1 text-white/50 text-xs">✓ Fare verified · KES 2 airtime sent to you</div>
+      </div>
+      {/* Owner summary strip */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="text-white/40 text-xs mb-2">SACCO Owner · daily digest</div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div><div className="text-green text-lg font-bold">6</div><div className="text-white/40 text-xs">Clean</div></div>
+          <div><div className="text-amber text-lg font-bold">2</div><div className="text-white/40 text-xs">Flagged</div></div>
+          <div><div className="text-red-400 text-lg font-bold">KES 1.2k</div><div className="text-white/40 text-xs">Recovered</div></div>
+        </div>
+      </div>
     </div>
   );
 }
