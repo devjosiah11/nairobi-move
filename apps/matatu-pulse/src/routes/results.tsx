@@ -1,9 +1,189 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowDownUp, MapPin, Clock, Users, BellPlus, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowDownUp, MapPin, Clock, Users, BellPlus, Zap, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2, Users2 } from "lucide-react";
 import { z } from "zod";
 import { AppLayout, RouteBadge } from "../components/AppLayout";
 import { findRoutes, isPeakNow } from "../lib/data";
+
+// ─── Insights types & fetch ───────────────────────────────────────────────────
+
+type Insights = {
+  traffic_level: 'low' | 'moderate' | 'heavy' | 'severe';
+  congestion_score: number;
+  current_fare_type: 'peak' | 'off_peak' | 'weekend';
+  predicted_fare_change: 'rising' | 'stable' | 'falling';
+  predicted_fare_in_30min: number;
+  suggested_departure: string;
+  alternative_message: string | null;
+  commuter_reports_last_hour: number;
+  last_fare_confirmation: string | null;
+};
+
+function useInsights(from: string, to: string) {
+  const [data, setData] = useState<Insights | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!from || !to) { setLoading(false); return; }
+    setLoading(true);
+    fetch(`/api/routes/insights?origin=${encodeURIComponent(from)}&dest=${encodeURIComponent(to)}`)
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [from, to]);
+
+  return { data, loading };
+}
+
+// ─── Smart Insights card ──────────────────────────────────────────────────────
+
+const TRAFFIC_BORDER: Record<string, string> = {
+  low:      'border-l-emerald-500',
+  moderate: 'border-l-yellow-400',
+  heavy:    'border-l-orange-500',
+  severe:   'border-l-red-600',
+};
+const TRAFFIC_BG: Record<string, string> = {
+  low:      'bg-emerald-50',
+  moderate: 'bg-yellow-50',
+  heavy:    'bg-orange-50',
+  severe:   'bg-red-50',
+};
+const TRAFFIC_BADGE: Record<string, string> = {
+  low:      'bg-emerald-100 text-emerald-800',
+  moderate: 'bg-yellow-100 text-yellow-800',
+  heavy:    'bg-orange-100 text-orange-800',
+  severe:   'bg-red-100 text-red-800',
+};
+const TRAFFIC_BAR: Record<string, string> = {
+  low:      'bg-emerald-500',
+  moderate: 'bg-yellow-400',
+  heavy:    'bg-orange-500',
+  severe:   'bg-red-600',
+};
+
+function InsightsCard({ data, loading }: { data: Insights | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="bg-white border border-l-4 border-l-muted rounded-2xl p-4 shadow-sm animate-pulse">
+        <div className="h-4 bg-muted rounded w-32 mb-3" />
+        <div className="h-3 bg-muted rounded w-full mb-2" />
+        <div className="h-3 bg-muted rounded w-3/4" />
+      </div>
+    );
+  }
+  if (!data) return null;
+
+  const { traffic_level, congestion_score, predicted_fare_change, predicted_fare_in_30min,
+          suggested_departure, alternative_message, commuter_reports_last_hour,
+          last_fare_confirmation } = data;
+
+  const FareArrow = predicted_fare_change === 'rising'
+    ? TrendingUp
+    : predicted_fare_change === 'falling'
+    ? TrendingDown
+    : Minus;
+
+  const fareArrowColor = predicted_fare_change === 'rising'
+    ? 'text-red-600'
+    : predicted_fare_change === 'falling'
+    ? 'text-emerald-600'
+    : 'text-muted-foreground';
+
+  return (
+    <div className={`border border-l-4 ${TRAFFIC_BORDER[traffic_level]} ${TRAFFIC_BG[traffic_level]} rounded-2xl p-4 shadow-sm`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          </span>
+          <span className="text-xs font-bold uppercase tracking-wider text-foreground/70">
+            Live Intelligence
+          </span>
+        </div>
+        <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${TRAFFIC_BADGE[traffic_level]}`}>
+          {traffic_level} traffic
+        </span>
+      </div>
+
+      {/* Fare prediction banner */}
+      {predicted_fare_change === 'rising' && (
+        <div className="flex items-center gap-2 bg-red-100 border border-red-200 rounded-xl px-3 py-2 mb-3 text-sm font-semibold text-red-700">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          Fare surge likely in 30 mins — board now
+        </div>
+      )}
+      {predicted_fare_change === 'falling' && (
+        <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-200 rounded-xl px-3 py-2 mb-3 text-sm font-semibold text-emerald-700">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          Fares dropping soon — consider waiting
+        </div>
+      )}
+
+      {/* Main stats row */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        {/* Congestion score */}
+        <div className="bg-white/70 rounded-xl p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5">
+            Congestion
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${TRAFFIC_BAR[traffic_level]}`}
+                style={{ width: `${congestion_score * 10}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold tabular-nums">{congestion_score}/10</span>
+          </div>
+        </div>
+
+        {/* Fare in 30 min */}
+        <div className="bg-white/70 rounded-xl p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">
+            Fare in 30 min
+          </div>
+          <div className="flex items-center gap-1.5">
+            <FareArrow className={`w-4 h-4 shrink-0 ${fareArrowColor}`} />
+            <span className="font-extrabold text-sm">KES {predicted_fare_in_30min}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Suggested departure */}
+      <div className="flex items-start gap-2 text-sm text-foreground/80 mb-2">
+        <Zap className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
+        <span className="font-medium">{suggested_departure}</span>
+      </div>
+
+      {/* Alt route */}
+      {alternative_message && (
+        <div className="text-xs text-muted-foreground flex items-start gap-1.5 mb-2">
+          <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+          {alternative_message}
+        </div>
+      )}
+
+      {/* Footer stats */}
+      <div className="flex items-center gap-3 pt-2 border-t border-black/5 text-xs text-muted-foreground">
+        {commuter_reports_last_hour > 0 && (
+          <span className="flex items-center gap-1">
+            <Users2 className="w-3.5 h-3.5" />
+            {commuter_reports_last_hour} report{commuter_reports_last_hour !== 1 ? 's' : ''} last hr
+          </span>
+        )}
+        {last_fare_confirmation && (
+          <span className="flex items-center gap-1 ml-auto">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            {last_fare_confirmation}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const searchSchema = z.object({
   from: z.string().catch(""),
@@ -22,6 +202,7 @@ function Results() {
   const navigate = useNavigate();
   const [sort, setSort] = useState<Sort>("cheapest");
   const peak = isPeakNow();
+  const { data: insights, loading: insightsLoading } = useInsights(from, to);
 
   const routes = useMemo(() => {
     const r = findRoutes(from, to);
@@ -74,6 +255,11 @@ function Results() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-4">
+        {/* Smart Insights */}
+        <div className="mb-4">
+          <InsightsCard data={insights} loading={insightsLoading} />
+        </div>
+
         {/* Sort */}
         <div className="flex items-center gap-2 mb-4 overflow-x-auto no-scrollbar -mx-1 px-1">
           {(

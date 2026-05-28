@@ -10,6 +10,7 @@ import ussdRouter from './routes/ussd.js';
 import smsRouter from './routes/sms.js';
 import commuterRouter from './routes/commuter.js';
 import faresRouter from './routes/fares.js';
+import routesRouter from './routes/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +36,7 @@ app.use('/api/sms', smsRouter);         // POST /api/sms/incoming - AT SMS webho
 app.use('/api/sms/delivery', smsRouter); // POST /api/sms/delivery - AT delivery callback
 app.use('/api/commuter', commuterRouter); // Public commuter API
 app.use('/api/fares', faresRouter);     // Fare alerts and reports
+app.use('/api/routes', routesRouter);   // Route insights and search
 
 // Health check
 app.get('/api/health', (_req, res) => {
