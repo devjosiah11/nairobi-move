@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install"
+buildCommand = "npm install && npm run build -w matatu-pulse"
 
 [deploy]
 startCommand = "npm start -w matatu-pulse"

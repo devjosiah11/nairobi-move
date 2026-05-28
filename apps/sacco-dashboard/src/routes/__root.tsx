@@ -5,11 +5,8 @@ import {
   createRootRouteWithContext,
   useRouter,
   useRouterState,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
 
-import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/fleet/Sidebar";
 import { Topbar } from "@/components/fleet/Topbar";
 import { Toaster } from "@/components/ui/sonner";
@@ -59,55 +56,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FleetPulse — Fleet Compliance for Kenyan SACCOs" },
-      {
-        name: "description",
-        content:
-          "FleetPulse by NairobiMove helps matatu and PSV SACCO owners track NTSA, insurance, and PSV licence compliance across their fleet.",
-      },
-      { property: "og:title", content: "FleetPulse — Fleet Compliance for Kenyan SACCOs" },
-      { name: "twitter:title", content: "FleetPulse — Fleet Compliance for Kenyan SACCOs" },
-      { name: "description", content: "FleetPulse by NairobiMove is a fleet compliance dashboard for Kenyan PSV owners." },
-      { property: "og:description", content: "FleetPulse by NairobiMove is a fleet compliance dashboard for Kenyan PSV owners." },
-      { name: "twitter:description", content: "FleetPulse by NairobiMove is a fleet compliance dashboard for Kenyan PSV owners." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3ccafd05-35fb-4b0e-b121-35505b1aaaa9/id-preview-fd49d918--b2e1ef94-9652-44e7-8364-a3667344efb5.lovable.app-1779883960042.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3ccafd05-35fb-4b0e-b121-35505b1aaaa9/id-preview-fd49d918--b2e1ef94-9652-44e7-8364-a3667344efb5.lovable.app-1779883960042.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:type", content: "website" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
-      },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
