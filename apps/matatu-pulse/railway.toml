@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install && npm run build"
+buildCommand = "npm install && npm run build -w matatu-pulse"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "npm start -w matatu-pulse"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
