@@ -256,8 +256,18 @@ function Results() {
 
       <div className="max-w-3xl mx-auto px-4 py-4">
         {/* Smart Insights */}
-        <div className="mb-4">
+        <div className="mb-2">
           <InsightsCard data={insights} loading={insightsLoading} />
+        </div>
+        <div className="mb-4 flex justify-end">
+          <Link
+            to="/map"
+            search={{ from: from || undefined, to: to || undefined }}
+            className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            View on map →
+          </Link>
         </div>
 
         {/* Sort */}

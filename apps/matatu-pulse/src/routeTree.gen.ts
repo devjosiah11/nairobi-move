@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StagesRouteImport } from './routes/stages'
 import { Route as RoutesRouteImport } from './routes/routes'
 import { Route as ResultsRouteImport } from './routes/results'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RouteIdRouteImport } from './routes/route.$id'
@@ -29,6 +30,11 @@ const RoutesRoute = RoutesRouteImport.update({
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AlertsRoute = AlertsRouteImport.update({
@@ -50,6 +56,7 @@ const RouteIdRoute = RouteIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/map': typeof MapRoute
   '/results': typeof ResultsRoute
   '/routes': typeof RoutesRoute
   '/stages': typeof StagesRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/map': typeof MapRoute
   '/results': typeof ResultsRoute
   '/routes': typeof RoutesRoute
   '/stages': typeof StagesRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/map': typeof MapRoute
   '/results': typeof ResultsRoute
   '/routes': typeof RoutesRoute
   '/stages': typeof StagesRoute
@@ -74,13 +83,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/alerts' | '/results' | '/routes' | '/stages' | '/route/$id'
+  fullPaths:
+    | '/'
+    | '/alerts'
+    | '/map'
+    | '/results'
+    | '/routes'
+    | '/stages'
+    | '/route/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/alerts' | '/results' | '/routes' | '/stages' | '/route/$id'
+  to:
+    | '/'
+    | '/alerts'
+    | '/map'
+    | '/results'
+    | '/routes'
+    | '/stages'
+    | '/route/$id'
   id:
     | '__root__'
     | '/'
     | '/alerts'
+    | '/map'
     | '/results'
     | '/routes'
     | '/stages'
@@ -90,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertsRoute: typeof AlertsRoute
+  MapRoute: typeof MapRoute
   ResultsRoute: typeof ResultsRoute
   RoutesRoute: typeof RoutesRoute
   StagesRoute: typeof StagesRoute
@@ -119,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/alerts': {
       id: '/alerts'
       path: '/alerts'
@@ -146,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertsRoute: AlertsRoute,
+  MapRoute: MapRoute,
   ResultsRoute: ResultsRoute,
   RoutesRoute: RoutesRoute,
   StagesRoute: StagesRoute,

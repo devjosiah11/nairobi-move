@@ -11,6 +11,7 @@ import smsRouter from './routes/sms.js';
 import commuterRouter from './routes/commuter.js';
 import faresRouter from './routes/fares.js';
 import routesRouter from './routes/routes.js';
+import trafficRouter from './routes/traffic.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,7 @@ app.use('/api/sms/delivery', smsRouter); // POST /api/sms/delivery - AT delivery
 app.use('/api/commuter', commuterRouter); // Public commuter API
 app.use('/api/fares', faresRouter);     // Fare alerts and reports
 app.use('/api/routes', routesRouter);   // Route insights and search
+app.use('/api/traffic', trafficRouter); // Live traffic map data
 
 // Health check
 app.get('/api/health', (_req, res) => {

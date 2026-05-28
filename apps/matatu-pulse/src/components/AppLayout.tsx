@@ -1,12 +1,13 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Search, Map, MapPin, Bell } from "lucide-react";
+import { Search, Map, MapPin, Bell, Navigation2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { to: "/", label: "Search", icon: Search },
-  { to: "/routes", label: "Routes", icon: Map },
-  { to: "/stages", label: "Stages", icon: MapPin },
-  { to: "/alerts", label: "Alerts", icon: Bell },
+  { to: "/",       label: "Search",   icon: Search      },
+  { to: "/routes", label: "Routes",   icon: Map         },
+  { to: "/map",    label: "Live Map", icon: Navigation2 },
+  { to: "/stages", label: "Stages",   icon: MapPin      },
+  { to: "/alerts", label: "Alerts",   icon: Bell        },
 ] as const;
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -55,7 +56,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Bottom nav (mobile) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-background border-t shadow-[0_-2px_12px_rgba(0,0,0,0.05)]">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5 text-[10px]">
           {NAV.map((n) => {
             const Icon = n.icon;
             const active = isActive(n.to);
