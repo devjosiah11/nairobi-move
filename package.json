@@ -13,6 +13,9 @@
     "dev:matatu": "npm run dev -w matatu-pulse",
     "dev:landing": "npm run dev -w landing"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
     "concurrently": "^8.2.0"
   }
