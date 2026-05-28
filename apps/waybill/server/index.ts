@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 
 import ussdRouter from './routes/ussd.js';
+import smsRouter from './routes/sms.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3005);
@@ -21,6 +22,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/ussd', ussdRouter);
+app.use('/api/sms', smsRouter);
 
 app.listen(PORT, () => {
   console.log(`[waybill] listening on :${PORT}`);

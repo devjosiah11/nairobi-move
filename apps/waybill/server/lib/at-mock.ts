@@ -24,8 +24,23 @@ export async function sendSMS(to: string, message: string): Promise<SendResult> 
     console.log(`[MOCK SMS] → ${to}\n         ${message.replace(/\n/g, '\n         ')}`);
     return { mocked: true, to, payload: { message } };
   }
-  await realSMS.send({ to: [to], message, from: process.env.AT_SHORTCODE });
-  return { mocked: false, to, payload: { message } };
+  try {
+    // In AT sandbox, omit `from` and AT uses its default sender ID.
+    // In production, pass an approved shortcode/sender ID via AT_SHORTCODE.
+    const sendArgs: { to: string[]; message: string; from?: string } = {
+      to: [to],
+      message,
+    };
+    if (process.env.AT_USERNAME && process.env.AT_USERNAME !== 'sandbox' && process.env.AT_SHORTCODE) {
+      sendArgs.from = process.env.AT_SHORTCODE;
+    }
+    const result = await realSMS.send(sendArgs);
+    console.log(`[AT SMS] → ${to}: ${JSON.stringify(result)}`);
+    return { mocked: false, to, payload: { message, result } };
+  } catch (err: any) {
+    console.error(`[AT SMS] FAILED → ${to}:`, err?.message ?? err);
+    throw err;
+  }
 }
 
 export async function makeVoiceCall(to: string): Promise<SendResult> {
@@ -42,8 +57,16 @@ export async function sendAirtime(to: string, amountKES: number): Promise<SendRe
     console.log(`[MOCK AIRTIME] → ${to} KES ${amountKES}`);
     return { mocked: true, to, payload: { amountKES } };
   }
-  await realAirtime.send({
-    recipients: [{ phoneNumber: to, amount: `KES ${amountKES}` }],
-  });
-  return { mocked: false, to, payload: { amountKES } };
+  try {
+    const result = await realAirtime.send({
+      recipients: [
+        { phoneNumber: to, currencyCode: 'KES', amount: amountKES },
+      ],
+    });
+    console.log(`[AT AIRTIME] → ${to} KES ${amountKES}: ${JSON.stringify(result)}`);
+    return { mocked: false, to, payload: { amountKES, result } };
+  } catch (err: any) {
+    console.error(`[AT AIRTIME] FAILED → ${to}:`, err?.message ?? err);
+    throw err;
+  }
 }
