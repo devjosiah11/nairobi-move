@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { sql } from '@nairobi-move/db';
 import { sendSMS, logSMS } from '@nairobi-move/utils';
-import { findRoutes, isPeakNow } from '../../src/lib/data.js';
+import { findRoutes, isPeakNow } from '../lib/fare-data.js';
 
 const router = Router();
 
