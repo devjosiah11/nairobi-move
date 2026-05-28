@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 // Import routes
@@ -77,14 +78,29 @@ app.get('/api/webhook/verify', (req, res) => {
   res.status(200).send('Active');
 });
 
-// In production, serve Vite dist folder
+// In production, serve Vite dist if available, otherwise show API info
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
-  
-  // Catch-all handler: return index.html for any non-API routes
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
-  });
+  const distPath = path.join(__dirname, '../dist');
+  if (existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    app.get('/', (_req, res) => {
+      res.json({
+        service: 'MatatuPulse API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+          health: '/api/health',
+          ussd: '/api/ussd',
+          sms: '/api/sms/incoming',
+          stats: '/api/stats/public'
+        }
+      });
+    });
+  }
 }
 
 const PORT = process.env.PORT ?? 3004;
