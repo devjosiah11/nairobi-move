@@ -146,6 +146,34 @@ router.post('/report', async (req, res) => {
   }
 });
 
+// ─── GET /api/traffic/incidents (all, for alerts feed) ───────────────────────
+
+router.get('/incidents', async (_req, res) => {
+  try {
+    const rows = await sql`
+      SELECT id,
+             lat::float, lng::float,
+             incident_type AS type,
+             description,
+             status,
+             created_at
+      FROM incident_reports
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
+    const incidents = rows.map((i: any) => ({
+      id: i.id, lat: i.lat, lng: i.lng,
+      type: i.type, description: i.description,
+      status: i.status,
+      reported_at: i.created_at,
+      time_ago: timeAgo(i.created_at),
+    }));
+    res.json({ incidents });
+  } catch (_) {
+    res.json({ incidents: demoIncidents().map(i => ({ ...i, status: 'active' })) });
+  }
+});
+
 // ─── DELETE /api/traffic/incidents/:id (soft delete) ─────────────────────────
 
 router.delete('/incidents/:id', async (req, res) => {
