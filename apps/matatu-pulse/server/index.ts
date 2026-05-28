@@ -81,9 +81,24 @@ app.get('/api/stats/public', async (_req, res) => {
 
 // Africa's Talking webhook verification endpoint
 app.get('/api/webhook/verify', (req, res) => {
-  // AT sends a GET request to verify webhook URL
   const { status } = req.query;
   res.status(200).send('Active');
+});
+
+// Debug: test SMS send — GET /api/debug/sms?to=+254740717201
+app.get('/api/debug/sms', async (req, res) => {
+  const to = (req.query.to as string) || '+254740717201';
+  try {
+    const { atSMS } = await import('@nairobi-move/utils');
+    const result = await (atSMS as any).send({
+      to: [to],
+      message: 'MatatuPulse debug test. If you see this SMS is working!',
+      from: process.env.AT_SENDER_ID || process.env.AT_SHORTCODE,
+    });
+    res.json({ ok: true, result, sender: process.env.AT_SENDER_ID || process.env.AT_SHORTCODE, username: process.env.AT_USERNAME });
+  } catch (e: any) {
+    res.json({ ok: false, error: e?.message, stack: e?.response?.data ?? e?.stack?.slice(0,300), sender: process.env.AT_SENDER_ID || process.env.AT_SHORTCODE, username: process.env.AT_USERNAME });
+  }
 });
 
 // In production, serve Vite dist if available, otherwise show API info
