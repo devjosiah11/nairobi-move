@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Phone, MessageSquare, Gauge, Radio,
+  ArrowRight, Phone, MessageSquare, Gauge, Radio,
   Wallet, Headphones, CheckCircle2, AlertTriangle, MapPin, Users,
   Bus, Sparkles, ArrowDown, Mail, Twitter, Linkedin, Github, ExternalLink,
 } from "lucide-react";
