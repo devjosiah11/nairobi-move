@@ -11,7 +11,9 @@
     "dev:boda": "npm run dev -w boda-dispatch",
     "dev:reg": "npm run dev -w registration",
     "dev:matatu": "npm run dev -w matatu-pulse",
-    "dev:landing": "npm run dev -w landing"
+    "dev:landing": "npm run dev -w landing",
+    "build:landing": "npm run build -w landing",
+    "start:landing": "npm run start -w landing"
   },
   "engines": {
     "node": ">=22"
