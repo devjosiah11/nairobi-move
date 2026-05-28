@@ -12,6 +12,8 @@ import alertsRouter from './routes/alerts.js';
 import smsLogRouter from './routes/sms-log.js';
 import saccosRouter from './routes/saccos.js';
 import statsRouter from './routes/stats.js';
+import ussdRouter from './routes/ussd.js';
+import smsIncomingRouter from './routes/sms-incoming.js';
 import { startReminderCron } from './jobs/reminder-cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +39,13 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('/api/stats/public', cors({ origin: '*' }));
 app.use('/api/stats/public', cors({ origin: '*' }));
+
+// AT callback routes — must allow all origins (Africa's Talking servers)
+app.options('/api/ussd', cors({ origin: '*' }));
+app.use('/api/ussd', cors({ origin: '*' }));
+app.options('/api/fleet-sms', cors({ origin: '*' }));
+app.use('/api/fleet-sms', cors({ origin: '*' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -47,6 +56,8 @@ app.use('/api/alerts', alertsRouter);
 app.use('/api/sms-log', smsLogRouter);
 app.use('/api/saccos', saccosRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/ussd', ussdRouter);
+app.use('/api/fleet-sms', smsIncomingRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
