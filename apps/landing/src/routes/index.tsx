@@ -118,17 +118,16 @@ function UssdPhone() {
       <div className="absolute -inset-6 rounded-[3rem] bg-gradient-to-tr from-green/30 via-amber/10 to-transparent blur-2xl" />
       <div className="relative rounded-[2.2rem] border border-white/10 bg-gradient-to-b from-[#1b2434] to-[#0c1322] p-3 shadow-2xl">
         <div className="rounded-[1.6rem] bg-[#0a0f1a] p-5 font-mono text-[13px] leading-relaxed text-emerald-300 min-h-[380px]">
-          <div className="text-white/40 text-xs mb-3">Dialed: <span className="text-white">*384#</span></div>
-          <div className="text-white">NairobiMove</div>
-          <div className="text-white/70">Smarter movement.</div>
-          <div className="mt-3 text-white">Choose route:</div>
+          <div className="text-white/40 text-xs mb-3">Dialed: <span className="text-white">*384*3133#</span></div>
+          <div className="text-white">Karibu MatatuPulse!</div>
+          <div className="mt-3 text-white">What would you like?</div>
           <div className="mt-1 space-y-0.5 text-white/80">
-            <div>1. CBD → Rongai</div>
-            <div>2. CBD → Kasarani</div>
-            <div>3. Westlands → Karen</div>
-            <div>4. Eastleigh → CBD</div>
-            <div>5. More routes</div>
+            <div>1. Check fare</div>
+            <div>2. Find route</div>
+            <div>3. Fare alerts</div>
+            <div>4. Report incident</div>
           </div>
+          <div className="mt-4 text-white/40 text-xs">Reply with a number</div>
           <div className="mt-5 flex items-center justify-between text-white/40 text-xs">
             <span>Reply</span>
             <span className="text-emerald-400">|</span>
@@ -239,7 +238,8 @@ function Index() {
               <div className="mt-10 flex flex-wrap gap-3">
                 <StatPill><MapPin className="h-4 w-4 text-green" /> {stats.totalRoutes}+ matatu routes mapped</StatPill>
                 <StatPill><Gauge className="h-4 w-4 text-amber" /> {stats.totalVehicles}+ vehicles tracked</StatPill>
-                <StatPill><Phone className="h-4 w-4 text-white" /> Dial *384*3133# — no app needed</StatPill>
+                <StatPill><Phone className="h-4 w-4 text-green" /> Commuters: dial <span className="font-mono text-green ml-1">*384*3133#</span></StatPill>
+                <StatPill><Phone className="h-4 w-4 text-amber" /> SACCOs: dial <span className="font-mono text-amber ml-1">*384*3138#</span></StatPill>
               </div>
             </div>
 
@@ -293,7 +293,7 @@ function Index() {
         eyebrowColor="text-blue-accent"
         accentRing="ring-blue-accent/40"
         title="Know your fare before you board."
-        body="Dial *384*3133# on any phone — feature phone or smartphone — and get accurate matatu fares, boarding stages, and route info in seconds. No app. No data. No guessing."
+        body="Pick up any phone and dial *384*3133# — feature phone or smartphone — and instantly get matatu fares, boarding stages and route info. No app. No data. No guessing."
         bullets={[
           "Works on all Safaricom & Airtel numbers",
           "Real-time fare range (peak & off-peak)",
@@ -312,7 +312,7 @@ function Index() {
         eyebrowColor="text-amber"
         accentRing="ring-amber/40"
         title="Never miss an NTSA deadline again."
-        body="FleetPulse monitors your entire fleet's compliance — NTSA inspection, insurance, and PSV licence — and sends automated SMS reminders before fines hit."
+        body="Dial *384*3138# to check any vehicle's compliance status or send a renewal reminder straight to your driver — or use the web dashboard for a full fleet view."
         bullets={[
           "30 / 14 / 7 / 1-day SMS reminders",
           "Drivers confirm via SMS reply",
@@ -338,9 +338,9 @@ function Index() {
 
           <div className="mt-16 grid md:grid-cols-3 gap-8 items-stretch relative">
             {[
-              { n: "01", icon: Phone, title: "Dial *384#", body: "Pick up any phone and dial. Works offline of data networks." },
-              { n: "02", icon: Radio, title: "Select your route", body: "Choose origin and destination from a clear USSD menu." },
-              { n: "03", icon: MessageSquare, title: "Receive fare SMS", body: "Peak and off-peak fare lands in your inbox instantly." },
+              { n: "01", icon: Phone, title: "Dial *384*3133#", body: "Pick up any phone — no data or smartphone needed. Works on Safaricom & Airtel." },
+              { n: "02", icon: Radio, title: "Choose your route", body: "Select origin and destination from a simple numbered menu. Takes under 30 seconds." },
+              { n: "03", icon: MessageSquare, title: "Get your fare by SMS", body: "Peak and off-peak fare range sent straight to your inbox. Free to receive." },
             ].map((s, i, arr) => (
               <div key={s.n} className="reveal relative rounded-2xl border border-white/10 bg-white/[0.03] p-8">
                 <div className="text-white/30 font-mono text-sm">{s.n}</div>
@@ -391,7 +391,7 @@ function Index() {
           <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               { icon: MessageSquare, name: "SMS API", line: "Fare confirmations, incident alerts, and compliance reminders." },
-              { icon: Radio, name: "USSD API", line: "The *384*3133# experience that runs on any handset." },
+              { icon: Radio, name: "USSD API", line: "*384*3133# for commuters, *384*3138# for SACCOs — runs on any handset, no data needed." },
               { icon: Headphones, name: "Voice API", line: "Auto-escalation calls when SACCO drivers don't confirm." },
               { icon: Wallet, name: "Airtime API", line: "Instant airtime rewards for commuters who report incidents." },
             ].map((a) => (
@@ -446,14 +446,15 @@ function Index() {
                 </div>
                 <div className="font-display text-xl font-semibold">FleetPulse</div>
               </div>
-              <p className="text-white/60 text-sm">SACCO compliance dashboard — track NTSA, insurance and PSV licence deadlines for your entire fleet.</p>
-              <div className="mt-auto">
+              <p className="text-white/60 text-sm">Track NTSA, insurance and PSV licence deadlines for your entire fleet — via USSD on any phone or the web dashboard.</p>
+              <div className="flex flex-col gap-3 mt-auto">
                 <a
                   href={import.meta.env.VITE_SACCO_API_URL?.replace(':3001','') ?? 'https://sacco-production-1ad8.up.railway.app'}
                   target="_blank" rel="noopener noreferrer"
                   className="inline-flex justify-center items-center gap-2 rounded-full bg-green text-white px-5 py-3 font-semibold hover:bg-green-2 transition w-full">
                   Open FleetPulse <ExternalLink className="h-4 w-4" />
                 </a>
+                <UssdSimulatorButton code="*384*3138#" label="Try USSD *384*3138#" color="amber" />
               </div>
             </div>
           </div>
@@ -471,8 +472,13 @@ function Index() {
               Check fares, report incidents, and track your fleet — all without downloading a thing.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <div className="inline-flex items-center gap-3 rounded-full border border-green/40 bg-green/10 px-6 py-3 font-mono text-lg">
-                <Phone className="h-5 w-5 text-green" /> Dial <span className="text-green font-bold">*384*3133#</span>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-green/40 bg-green/10 px-5 py-3 font-mono text-sm">
+                  <Phone className="h-4 w-4 text-green" /> Commuters: <span className="text-green font-bold ml-1">*384*3133#</span>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber/40 bg-amber/10 px-5 py-3 font-mono text-sm">
+                  <Phone className="h-4 w-4 text-amber" /> SACCOs: <span className="text-amber font-bold ml-1">*384*3138#</span>
+                </div>
               </div>
               <a href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-green px-6 py-3 font-semibold hover:bg-green-2 transition">
                 Open MatatuPulse <ExternalLink className="h-4 w-4" />
@@ -511,7 +517,10 @@ function Index() {
           </div>
           <div className="mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
             <div>© {new Date().getFullYear()} NairobiMove. Made in Nairobi.</div>
-            <div>Dial <span className="text-white/80 font-mono">*384*3133#</span> on any Kenyan number to try it now.</div>
+            <div className="flex flex-wrap gap-4">
+              <span>Commuters: <span className="text-white/80 font-mono">*384*3133#</span></span>
+              <span>SACCOs: <span className="text-white/80 font-mono">*384*3138#</span></span>
+            </div>
           </div>
         </div>
       </footer>
@@ -575,25 +584,30 @@ function ModuleSection({
   );
 }
 
-function UssdSimulatorButton() {
+function UssdSimulatorButton({ code = '*384*3133#', label, color = 'green' }: { code?: string; label?: string; color?: 'green' | 'amber' }) {
   const [open, setOpen] = useState(false);
+  const borderCls = color === 'amber' ? 'border-amber/40 bg-amber/10 hover:bg-amber/20' : 'border-green/40 bg-green/10 hover:bg-green/20';
+  const iconCls   = color === 'amber' ? 'text-amber' : 'text-green';
+  const codeCls   = color === 'amber' ? 'text-amber font-bold' : 'text-green font-bold';
+  const linkCls   = color === 'amber' ? 'text-amber underline underline-offset-2' : 'text-green underline underline-offset-2';
+  const displayLabel = label ?? `Try USSD ${code}`;
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="inline-flex w-full justify-center items-center gap-2 rounded-full border border-green/40 bg-green/10 px-5 py-3 font-semibold text-sm hover:bg-green/20 transition">
-        <Phone className="h-4 w-4 text-green" /> Try USSD *384*3133#
+        className={`inline-flex w-full justify-center items-center gap-2 rounded-full border px-5 py-3 font-semibold text-sm transition ${borderCls}`}>
+        <Phone className={`h-4 w-4 ${iconCls}`} /> {displayLabel}
       </button>
       {open && (
         <div className="absolute left-0 right-0 mt-3 z-50 rounded-2xl border border-white/15 bg-[#0c1322] p-5 shadow-2xl text-sm">
           <div className="font-semibold text-white mb-3 flex items-center gap-2">
-            <Radio className="h-4 w-4 text-green" /> Try USSD in the simulator
+            <Radio className={`h-4 w-4 ${iconCls}`} /> Try USSD in the simulator
           </div>
           <ol className="space-y-2 text-white/70 list-decimal list-inside">
-            <li>Go to <a href="https://developers.africastalking.com/simulator" target="_blank" rel="noopener noreferrer" className="text-green underline underline-offset-2">developers.africastalking.com/simulator</a></li>
-            <li>Enter your phone number (e.g. <span className="font-mono text-white/90">+254712345678</span>)</li>
-            <li>In the dial field type <span className="font-mono text-green font-bold">*384*3133#</span></li>
-            <li>Press <strong className="text-white">Call</strong> — the menu will appear</li>
+            <li>Go to <a href="https://developers.africastalking.com/simulator" target="_blank" rel="noopener noreferrer" className={linkCls}>developers.africastalking.com/simulator</a></li>
+            <li>Enter your phone number e.g. <span className="font-mono text-white/90">+254712345678</span></li>
+            <li>In the dial field enter <span className={`font-mono ${codeCls}`}>{code}</span></li>
+            <li>Press <strong className="text-white">Call</strong> — the menu will appear instantly</li>
           </ol>
           <button onClick={() => setOpen(false)} className="mt-4 text-xs text-white/40 hover:text-white/70">Close</button>
         </div>
