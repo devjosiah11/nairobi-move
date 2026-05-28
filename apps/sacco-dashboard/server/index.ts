@@ -36,18 +36,19 @@ const corsOptions = {
   credentials: true
 };
 
-app.use(cors(corsOptions));
-app.options('/api/stats/public', cors({ origin: '*' }));
-app.use('/api/stats/public', cors({ origin: '*' }));
-
-// AT callback routes — must allow all origins (Africa's Talking servers)
+// AT callback routes — open CORS BEFORE general cors middleware
 app.options('/api/ussd', cors({ origin: '*' }));
 app.use('/api/ussd', cors({ origin: '*' }));
 app.options('/api/fleet-sms', cors({ origin: '*' }));
 app.use('/api/fleet-sms', cors({ origin: '*' }));
+app.options('/api/stats/public', cors({ origin: '*' }));
+app.use('/api/stats/public', cors({ origin: '*' }));
 
-app.use(express.json());
+app.use(cors(corsOptions));
+
+// urlencoded MUST come before json — AT POSTs form-encoded bodies
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Mount routes
 app.use('/api/auth', authRouter);
