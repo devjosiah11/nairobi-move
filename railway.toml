@@ -1,18 +1,20 @@
-# NairobiMove - Railway Deployment Configuration
-# Root configuration for monorepo deployment
+# NairobiMove - Railway Root Config
+# NOTE: Build/Start commands must be set MANUALLY per service in Railway dashboard
+# because Railway reads THIS file (repo root), not the per-app railway.toml files.
+#
+# Per-service commands:
+#   matatu-pulse:    build = "npm install && npm run build -w matatu-pulse"   start = "npm start -w matatu-pulse"
+#   sacco-dashboard: build = "npm install && npm run build -w sacco-dashboard" start = "npm start -w sacco-dashboard"
+#   boda-dispatch:   build = "npm install && npm run build -w boda-dispatch"   start = "npm start -w boda-dispatch"
+#   registration:    build = "npm install && npm run build -w registration"     start = "npm start -w registration"
 
 [build]
 builder = "nixpacks"
 
-# Global environment variables
 [variables]
 NODE_ENV = "production"
 
-# Deployment configuration
 [deploy]
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
-
-# Individual app services will be configured in their own railway.toml files
-# This file serves as the root configuration for the monorepo
