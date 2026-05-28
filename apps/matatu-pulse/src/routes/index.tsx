@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { ArrowDownUp, Search, Phone, ChevronRight } from "lucide-react";
 import { AppLayout } from "../components/AppLayout";
-import { ALL_STAGE_NAMES, POPULAR_ROUTES } from "../lib/data";
+import { ALL_STAGE_NAMES, POPULAR_ROUTES, isPeakNow, findRoutes } from "../lib/data";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -69,6 +69,7 @@ function Index() {
   const [to, setTo] = useState("");
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
+  const peak = isPeakNow();
 
   const swap = () => {
     setFrom(to);
@@ -90,10 +91,21 @@ function Index() {
         <div className="absolute inset-0 opacity-20 mix-blend-overlay matatu-stripe" />
         <div className="absolute -bottom-10 -right-10 w-60 h-60 rounded-full bg-secondary/40 blur-3xl" />
         <div className="relative max-w-3xl mx-auto px-4 pt-10 pb-28 md:pt-16 md:pb-36 text-primary-foreground">
-          <span className="inline-flex items-center gap-2 bg-white/15 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold">
-            <span className="h-2 w-2 rounded-full bg-secondary animate-pulse" />
-            Live Nairobi fares
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-2 bg-white/15 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Live data
+            </span>
+            {peak ? (
+              <span className="inline-flex items-center gap-1.5 bg-amber-400/20 border border-amber-400/40 text-amber-200 px-3 py-1 rounded-full text-xs font-bold">
+                ⚡ Peak now — fares higher
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 bg-emerald-400/20 border border-emerald-400/40 text-emerald-200 px-3 py-1 rounded-full text-xs font-bold">
+                ✓ Off-peak — best fares now
+              </span>
+            )}
+          </div>
           <h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
             Where are you headed?
           </h1>
@@ -144,20 +156,34 @@ function Index() {
             Popular routes
           </h2>
           <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
-            {POPULAR_ROUTES.map((r) => (
-              <button
-                key={r.label}
-                onClick={() => {
-                  setFrom(r.from);
-                  setTo(r.to);
-                  search(r.from, r.to);
-                }}
-                className="shrink-0 px-4 h-11 rounded-full bg-white border border-border hover:border-primary hover:bg-primary/5 text-sm font-semibold flex items-center gap-2 shadow-sm"
-              >
-                {r.label}
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
-            ))}
+            {POPULAR_ROUTES.map((r) => {
+              const match = findRoutes(r.from, r.to)[0];
+              const fMin = match ? (peak ? match.farePeak[0] : match.fareOffPeak[0]) : null;
+              const fMax = match ? (peak ? match.farePeak[1] : match.fareOffPeak[1]) : null;
+              return (
+                <button
+                  key={r.label}
+                  onClick={() => {
+                    setFrom(r.from);
+                    setTo(r.to);
+                    search(r.from, r.to);
+                  }}
+                  className="shrink-0 px-4 h-auto py-2.5 rounded-2xl bg-white border border-border hover:border-primary hover:bg-primary/5 text-sm font-semibold flex flex-col items-start gap-0 shadow-sm"
+                >
+                  <span className="flex items-center gap-1">
+                    {r.label}
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  </span>
+                  {fMin !== null && (
+                    <span className={`text-[11px] font-bold ${
+                      peak ? 'text-amber-600' : 'text-emerald-600'
+                    }`}>
+                      KES {fMin}–{fMax}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

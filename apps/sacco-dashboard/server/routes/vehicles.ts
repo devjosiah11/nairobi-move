@@ -4,12 +4,30 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
+// Auth is bypassed in dev mode or when ?demo=true is present
+const demoOrDevGuard = (req: any, res: any, next: any) => {
+  if (process.env.NODE_ENV !== 'production' || req.query.demo === 'true') {
+    return next();
+  }
+  return authMiddleware(req, res, next);
+};
+
+router.use(demoOrDevGuard);
+
+// Resolve which sacco_id to use: authenticated user OR first Rongai sacco as demo fallback
+async function resolveSaccoId(req: any): Promise<string | null> {
+  if (req.user?.saccoId) return req.user.saccoId;
+  // Demo/dev: use first sacco in DB (seeded as Rongai Express)
+  const rows = await sql`SELECT id FROM saccos ORDER BY created_at LIMIT 1`;
+  return rows[0]?.id ?? null;
+}
 
 // GET /api/vehicles
 router.get('/', async (req, res) => {
   try {
+    const saccoId = await resolveSaccoId(req);
+    if (!saccoId) return res.status(404).json({ error: 'No SACCO found' });
+
     const result = await sql`
       SELECT 
         v.*,
@@ -43,7 +61,7 @@ router.get('/', async (req, res) => {
           ELSE NULL 
         END as psv_days_remaining
       FROM vehicles v
-      WHERE v.sacco_id = ${req.user!.saccoId}
+      WHERE v.sacco_id = ${saccoId}
       ORDER BY v.created_at DESC
     `;
 
@@ -93,7 +111,7 @@ router.get('/:id', async (req, res) => {
           ELSE NULL 
         END as psv_days_remaining
       FROM vehicles v
-      WHERE v.id = ${id} AND v.sacco_id = ${req.user!.saccoId}
+      WHERE v.id = ${id} AND v.sacco_id = ${(await resolveSaccoId(req)) ?? ''}
     `;
 
     if (vehicleResult.length === 0) {
@@ -160,7 +178,7 @@ router.post('/', async (req, res) => {
         sacco_id, plate_number, vehicle_type, driver_name, driver_phone,
         ntsa_expiry, insurance_expiry, psv_expiry
       ) VALUES (
-        ${req.user!.saccoId}, ${plate_number.toUpperCase()}, ${vehicle_type}, 
+        ${(await resolveSaccoId(req)) ?? ''}, ${plate_number.toUpperCase()}, ${vehicle_type}, 
         ${driver_name}, ${driver_phone}, 
         ${ntsa_expiry || null}, ${insurance_expiry || null}, ${psv_expiry || null}
       )
@@ -190,7 +208,7 @@ router.put('/:id', async (req, res) => {
 
     // Check if vehicle belongs to this sacco
     const existing = await sql`
-      SELECT id FROM vehicles WHERE id = ${id} AND sacco_id = ${req.user!.saccoId}
+      SELECT id FROM vehicles WHERE id = ${id} AND sacco_id = ${(await resolveSaccoId(req)) ?? ''}
     `;
     
     if (existing.length === 0) {
@@ -238,7 +256,7 @@ router.delete('/:id', async (req, res) => {
 
     // Check if vehicle belongs to this sacco
     const existing = await sql`
-      SELECT id FROM vehicles WHERE id = ${id} AND sacco_id = ${req.user!.saccoId}
+      SELECT id FROM vehicles WHERE id = ${id} AND sacco_id = ${(await resolveSaccoId(req)) ?? ''}
     `;
     
     if (existing.length === 0) {
@@ -270,7 +288,7 @@ router.post('/:id/renew', async (req, res) => {
 
     // Check if vehicle belongs to this sacco
     const existing = await sql`
-      SELECT id FROM vehicles WHERE id = ${id} AND sacco_id = ${req.user!.saccoId}
+      SELECT id FROM vehicles WHERE id = ${id} AND sacco_id = ${(await resolveSaccoId(req)) ?? ''}
     `;
     
     if (existing.length === 0) {

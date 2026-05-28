@@ -35,6 +35,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('/api/stats/public', cors({ origin: '*' }));
+app.use('/api/stats/public', cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

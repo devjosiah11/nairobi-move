@@ -27,6 +27,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('/api/stats/public', cors({ origin: '*' }));
+app.use('/api/stats/public', cors({ origin: '*' }));
 // AT sends form-encoded POST for USSD and SMS — must come before json()
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

@@ -1,10 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight, Phone, MessageSquare, Gauge, Radio,
   Wallet, Headphones, CheckCircle2, AlertTriangle, MapPin, Users,
   Bike, Bus, Sparkles, ArrowDown, Mail, Twitter, Linkedin, Github,
 } from "lucide-react";
+
+type LiveStats = { totalVehicles: number; totalRoutes: number; totalStages: number };
+
+const FALLBACK: LiveStats = { totalVehicles: 8, totalRoutes: 8, totalStages: 20 };
+
+function useLiveStats(): LiveStats {
+  const [stats, setStats] = useState<LiveStats>(FALLBACK);
+
+  useEffect(() => {
+    const saccoUrl  = import.meta.env.VITE_SACCO_API_URL as string | undefined;
+    const matatuUrl = import.meta.env.VITE_MATATU_API_URL as string | undefined;
+    if (!saccoUrl && !matatuUrl) return;
+
+    Promise.allSettled([
+      saccoUrl  ? fetch(`${saccoUrl}/api/stats/public`).then(r => r.json())  : Promise.reject(),
+      matatuUrl ? fetch(`${matatuUrl}/api/stats/public`).then(r => r.json()) : Promise.reject(),
+    ]).then(([saccoRes, matatuRes]) => {
+      const saccoData  = saccoRes.status  === 'fulfilled' ? saccoRes.value  : null;
+      const matatuData = matatuRes.status === 'fulfilled' ? matatuRes.value : null;
+
+      setStats({
+        totalVehicles: saccoData?.total_vehicles  || matatuData?.activeVehicles || FALLBACK.totalVehicles,
+        totalRoutes:   FALLBACK.totalRoutes,
+        totalStages:   FALLBACK.totalStages,
+      });
+    });
+  }, []);
+
+  return stats;
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -200,6 +230,7 @@ function SmsThread() {
 
 function Index() {
   const ref = useReveal();
+  const stats = useLiveStats();
   return (
     <div ref={ref} className="bg-navy text-white font-body overflow-x-hidden">
       <Nav />
@@ -234,9 +265,9 @@ function Index() {
                 </a>
               </div>
               <div className="mt-10 flex flex-wrap gap-3">
-                <StatPill><MapPin className="h-4 w-4 text-green" /> 170,000+ matatu routes</StatPill>
-                <StatPill><Phone className="h-4 w-4 text-amber" /> SMS works on any phone</StatPill>
-                <StatPill><Sparkles className="h-4 w-4 text-white" /> Built on Africa's Talking</StatPill>
+                <StatPill><MapPin className="h-4 w-4 text-green" /> {stats.totalRoutes}+ matatu routes mapped</StatPill>
+                <StatPill><Gauge className="h-4 w-4 text-amber" /> {stats.totalVehicles}+ vehicles tracked</StatPill>
+                <StatPill><Sparkles className="h-4 w-4 text-white" /> {stats.totalStages}+ stages covered</StatPill>
               </div>
             </div>
 
