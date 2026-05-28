@@ -3,6 +3,45 @@ import { sql } from '@nairobi-move/db';
 
 const router = Router();
 
+// ─── DB init: ensure incident_reports table exists ────────────────────────────
+
+async function ensureIncidentTable() {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS incident_reports (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        phone_number  TEXT NOT NULL DEFAULT 'anonymous',
+        incident_type TEXT NOT NULL,
+        description   TEXT,
+        lat           NUMERIC(9,6),
+        lng           NUMERIC(9,6),
+        status        TEXT DEFAULT 'active',
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+  } catch (e) {
+    console.error('incident_reports table init error:', e);
+  }
+}
+ensureIncidentTable();
+
+// ─── Hardcoded demo stages (DB stages table not yet seeded in prod) ────────────
+
+type TrafficLevel = 'low' | 'moderate' | 'heavy' | 'severe';
+
+const DEMO_STAGES = [
+  { id: 's1',  name: 'CBD (Archives)',     area: 'CBD',        lat: -1.2833, lng: 36.8167, routes: [{ route_number: '111', name: 'CBD–Rongai',     peak_min: 80,  peak_max: 100 }, { route_number: '125', name: 'CBD–Karen',      peak_min: 80,  peak_max: 120 }] },
+  { id: 's2',  name: 'Westlands',          area: 'Westlands',  lat: -1.2641, lng: 36.8020, routes: [{ route_number: '23',  name: 'Westlands–CBD', peak_min: 30,  peak_max: 50  }] },
+  { id: 's3',  name: 'Rongai',             area: 'Rongai',     lat: -1.3966, lng: 36.7462, routes: [{ route_number: '111', name: 'CBD–Rongai',     peak_min: 80,  peak_max: 100 }] },
+  { id: 's4',  name: 'Ngong Road',         area: 'Ngong',      lat: -1.3031, lng: 36.7677, routes: [{ route_number: '15',  name: 'Ngong Rd–CBD',  peak_min: 40,  peak_max: 60  }] },
+  { id: 's5',  name: 'Thika Road',         area: 'Thika',      lat: -1.0333, lng: 37.0833, routes: [{ route_number: '17B', name: 'CBD–Thika',     peak_min: 120, peak_max: 200 }] },
+  { id: 's6',  name: 'Eastleigh',          area: 'Eastleigh',  lat: -1.2741, lng: 36.8452, routes: [{ route_number: '58',  name: 'CBD–Eastleigh', peak_min: 30,  peak_max: 50  }] },
+  { id: 's7',  name: 'Karen',              area: 'Karen',      lat: -1.3171, lng: 36.7094, routes: [{ route_number: '125', name: 'CBD–Karen',     peak_min: 80,  peak_max: 120 }] },
+  { id: 's8',  name: 'Kasarani (TRM)',     area: 'Kasarani',   lat: -1.2197, lng: 36.8880, routes: [{ route_number: '45',  name: 'CBD–Kasarani',  peak_min: 50,  peak_max: 70  }] },
+  { id: 's9',  name: 'Kawangware',         area: 'Kawangware', lat: -1.3019, lng: 36.7430, routes: [{ route_number: '33',  name: 'CBD–Kawangware',peak_min: 50,  peak_max: 70  }] },
+  { id: 's10', name: 'Railway Station',    area: 'CBD',        lat: -1.2921, lng: 36.8219, routes: [{ route_number: '111', name: 'CBD–Rongai',    peak_min: 80,  peak_max: 100 }] },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getEATTime() {
@@ -10,8 +49,6 @@ function getEATTime() {
   const d = new Date(eatMs);
   return { hour: d.getUTCHours(), dayOfWeek: d.getUTCDay() };
 }
-
-type TrafficLevel = 'low' | 'moderate' | 'heavy' | 'severe';
 
 function stageTraffic(name: string, hour: number, isWeekend: boolean): { level: TrafficLevel; score: number } {
   const n = name.toLowerCase();
@@ -55,43 +92,15 @@ router.get('/map-data', async (_req, res) => {
     const peakLabel = isPeak && hour < 12 ? 'Morning peak' : isPeak ? 'Evening peak' : isWeekend ? 'Weekend' : 'Off-peak';
     const { level: overallLevel } = stageTraffic('CBD Archives', hour, isWeekend);
 
-    let stages: any[] = [];
-    try {
-      const stageRows = await sql`
-        SELECT s.id, s.name, s.area,
-               s.latitude::float  AS lat,
-               s.longitude::float AS lng,
-               COUNT(DISTINCT r.id) AS route_count
-        FROM stages s
-        LEFT JOIN routes r ON r.origin_stage_id = s.id OR r.dest_stage_id = s.id
-        WHERE s.latitude IS NOT NULL AND s.longitude IS NOT NULL
-        GROUP BY s.id, s.name, s.area, s.latitude, s.longitude
-        ORDER BY s.name
-      `;
-
-      const routeRows = await sql`
-        SELECT r.id, r.route_number, r.name,
-               r.origin_stage_id, r.dest_stage_id,
-               fp.min_fare AS peak_min, fp.max_fare AS peak_max
-        FROM routes r
-        LEFT JOIN fares fp ON fp.route_id = r.id AND fp.fare_type = 'peak'
-      `;
-
-      stages = stageRows.map((s: any) => {
-        const { level, score } = stageTraffic(s.name, hour, isWeekend);
-        const available_routes = routeRows
-          .filter((r: any) => r.origin_stage_id === s.id || r.dest_stage_id === s.id)
-          .map((r: any) => ({ route_number: r.route_number, name: r.name, peak_min: r.peak_min, peak_max: r.peak_max }));
-        return {
-          id: s.id, name: s.name, area: s.area,
-          lat: s.lat, lng: s.lng,
-          traffic_level: level, congestion_score: score,
-          route_count: parseInt(s.route_count), available_routes,
-        };
-      });
-    } catch (e) {
-      console.error('Stages query error:', e);
-    }
+    const stages = DEMO_STAGES.map(s => {
+      const { level, score } = stageTraffic(s.name, hour, isWeekend);
+      return {
+        id: s.id, name: s.name, area: s.area,
+        lat: s.lat, lng: s.lng,
+        traffic_level: level, congestion_score: score,
+        route_count: s.routes.length, available_routes: s.routes,
+      };
+    });
 
     let incidents: any[] = [];
     try {
