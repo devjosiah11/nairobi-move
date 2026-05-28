@@ -27,6 +27,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Africa's Talking callbacks must bypass CORS — they POST from AT servers
+app.use('/api/ussd', cors({ origin: '*' }));
+app.use('/api/sms', cors({ origin: '*' }));
 app.options('/api/stats/public', cors({ origin: '*' }));
 app.use('/api/stats/public', cors({ origin: '*' }));
 // AT sends form-encoded POST for USSD and SMS — must come before json()
@@ -34,9 +37,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Mount routes
-app.use('/api/ussd', ussdRouter);        // POST /api/ussd - AT USSD webhook
-app.use('/api/sms', smsRouter);         // POST /api/sms/incoming - AT SMS webhook
-app.use('/api/sms/delivery', smsRouter); // POST /api/sms/delivery - AT delivery callback
+app.use('/api/ussd', ussdRouter);  // POST /api/ussd - AT USSD webhook
+app.use('/api/sms', smsRouter);    // POST /api/sms/incoming + /api/sms/delivery
 app.use('/api/commuter', commuterRouter); // Public commuter API
 app.use('/api/fares', faresRouter);     // Fare alerts and reports
 app.use('/api/routes', routesRouter);   // Route insights and search
