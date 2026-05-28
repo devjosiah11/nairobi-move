@@ -407,47 +407,55 @@ function Index() {
         </div>
       </section>
 
-      {/* PRICING */}
+      {/* APPS */}
       <section id="pricing" className="relative py-28 bg-navy">
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-3xl reveal">
-            <div className="text-green font-mono text-sm uppercase tracking-widest mb-4">Pricing</div>
+            <div className="text-green font-mono text-sm uppercase tracking-widest mb-4">Try it now</div>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05]">
-              Free for every Kenyan. <br/>
-              <span className="text-white/50">Powerful for every SACCO.</span>
+              Free for every Kenyan.
             </h2>
           </div>
 
           <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-3xl">
-            <PricingCard
-              name="Commuter"
-              price="Free"
-              priceNote="Forever"
-              icon={Users}
-              features={[
-                "Dial *384*3133# on any phone",
-                "Real-time fare range (peak & off-peak)",
-                "SMS fare confirmation",
-                "Subscribe to route alerts",
-              ]}
-              cta="Open MatatuPulse"
-              href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'}
-            />
-            <PricingCard
-              name="SACCO / Fleet"
-              price="KES 500"
-              priceNote="/month per 10 vehicles"
-              icon={Gauge}
-              popular
-              features={[
-                "FleetPulse web dashboard",
-                "Automated compliance SMS reminders",
-                "Voice escalation on no-response",
-                "Driver confirmations & audit log",
-              ]}
-              cta="Open FleetPulse"
-              href={import.meta.env.VITE_SACCO_API_URL?.replace(':3001','') ?? 'https://sacco-production-1ad8.up.railway.app'}
-            />
+            {/* MatatuPulse card */}
+            <div className="reveal relative rounded-2xl border border-blue-accent/40 bg-gradient-to-b from-blue-accent/10 to-transparent p-8 flex flex-col gap-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-white/5 flex items-center justify-center">
+                  <Bus className="h-5 w-5 text-white" />
+                </div>
+                <div className="font-display text-xl font-semibold">MatatuPulse</div>
+              </div>
+              <p className="text-white/60 text-sm">Check fares, find routes, report incidents and subscribe to alerts — on web or via USSD on any phone.</p>
+              <div className="flex flex-col gap-3 mt-auto">
+                <a
+                  href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex justify-center items-center gap-2 rounded-full bg-white text-navy px-5 py-3 font-semibold hover:bg-white/90 transition">
+                  Open MatatuPulse <ExternalLink className="h-4 w-4" />
+                </a>
+                <UssdSimulatorButton />
+              </div>
+            </div>
+
+            {/* FleetPulse card */}
+            <div className="reveal relative rounded-2xl border border-amber/40 bg-gradient-to-b from-amber/10 to-transparent p-8 flex flex-col gap-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-white/5 flex items-center justify-center">
+                  <Gauge className="h-5 w-5 text-white" />
+                </div>
+                <div className="font-display text-xl font-semibold">FleetPulse</div>
+              </div>
+              <p className="text-white/60 text-sm">SACCO compliance dashboard — track NTSA, insurance and PSV licence deadlines for your entire fleet.</p>
+              <div className="mt-auto">
+                <a
+                  href={import.meta.env.VITE_SACCO_API_URL?.replace(':3001','') ?? 'https://sacco-production-1ad8.up.railway.app'}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex justify-center items-center gap-2 rounded-full bg-green text-white px-5 py-3 font-semibold hover:bg-green-2 transition w-full">
+                  Open FleetPulse <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -567,39 +575,29 @@ function ModuleSection({
   );
 }
 
-function PricingCard({
-  name, price, priceNote, icon: Icon, features, cta, href, popular,
-}: {
-  name: string; price: string; priceNote: string; icon: any; features: string[]; cta: string; href: string; popular?: boolean;
-}) {
+function UssdSimulatorButton() {
+  const [open, setOpen] = useState(false);
   return (
-    <div className={`reveal relative rounded-2xl border p-8 flex flex-col ${popular ? "border-green/60 bg-gradient-to-b from-green/10 to-transparent" : "border-white/10 bg-white/[0.03]"}`}>
-      {popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-green px-3 py-1 text-xs font-semibold">
-          <Sparkles className="h-3.5 w-3.5" /> Most Popular
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="inline-flex w-full justify-center items-center gap-2 rounded-full border border-green/40 bg-green/10 px-5 py-3 font-semibold text-sm hover:bg-green/20 transition">
+        <Phone className="h-4 w-4 text-green" /> Try USSD *384*3133#
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 mt-3 z-50 rounded-2xl border border-white/15 bg-[#0c1322] p-5 shadow-2xl text-sm">
+          <div className="font-semibold text-white mb-3 flex items-center gap-2">
+            <Radio className="h-4 w-4 text-green" /> Try USSD in the simulator
+          </div>
+          <ol className="space-y-2 text-white/70 list-decimal list-inside">
+            <li>Go to <a href="https://developers.africastalking.com/simulator" target="_blank" rel="noopener noreferrer" className="text-green underline underline-offset-2">developers.africastalking.com/simulator</a></li>
+            <li>Enter your phone number (e.g. <span className="font-mono text-white/90">+254712345678</span>)</li>
+            <li>In the dial field type <span className="font-mono text-green font-bold">*384*3133#</span></li>
+            <li>Press <strong className="text-white">Call</strong> — the menu will appear</li>
+          </ol>
+          <button onClick={() => setOpen(false)} className="mt-4 text-xs text-white/40 hover:text-white/70">Close</button>
         </div>
       )}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-white/5 flex items-center justify-center">
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-        <div className="font-display text-xl font-semibold">{name}</div>
-      </div>
-      <div className="mt-6 flex items-baseline gap-2">
-        <div className="font-display text-4xl font-bold">{price}</div>
-        <div className="text-white/50 text-sm">{priceNote}</div>
-      </div>
-      <ul className="mt-7 space-y-3 text-sm flex-1">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2.5 text-white/80">
-            <CheckCircle2 className="h-4 w-4 text-green mt-0.5 shrink-0" /> <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-      <a href={href} target="_blank" rel="noopener noreferrer"
-        className={`mt-8 inline-flex justify-center items-center gap-2 rounded-full px-5 py-3 font-semibold transition ${popular ? "bg-green hover:bg-green-2" : "bg-white text-navy hover:bg-white/90"}`}>
-        {cta} <ExternalLink className="h-4 w-4" />
-      </a>
     </div>
   );
 }
