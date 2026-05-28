@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nairobi-move-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nairobi_move
+    ports:
+      - "5432:5432"
+    volumes:
+      - waybill-pgdata:/var/lib/postgresql/data
+      - ../../shared/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../shared/db/schema-waybill.sql:/docker-entrypoint-initdb.d/02-schema-waybill.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  waybill-pgdata:
