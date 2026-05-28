@@ -10,7 +10,7 @@ export async function sendSMS(to: string | string[], message: string): Promise<v
     const options = {
       to: Array.isArray(to) ? to : [to],
       message,
-      from: process.env.AT_SHORTCODE || 'NairobiMove',
+      from: process.env.AT_SENDER_ID || process.env.AT_SHORTCODE || 'NairobiMove',
     };
 
     await atSMS.send(options);

@@ -1,380 +1,174 @@
 import { Router } from 'express';
 import { sql } from '@nairobi-move/db';
 import { sendSMS, logSMS } from '@nairobi-move/utils';
+import { findRoutes, isPeakNow } from '../../src/lib/data.js';
 
 const router = Router();
 
-// USSD Handler - Africa's Talking USSD API
-router.post('/', async (req, res) => {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function ussdReply(res: any, text: string) {
+  res.set('Content-Type', 'text/plain');
+  res.send(text);
+}
+
+function phone(raw: string) {
+  return raw.startsWith('+') ? raw : `+254${raw.replace(/^0/, '')}`;
+}
+
+async function trySMS(to: string, msg: string) {
   try {
-    const { sessionId, serviceCode, phoneNumber, text } = req.body;
+    await sendSMS(to, msg);
+    await logSMS(sql, 'matatu-pulse', 'outbound', to, msg);
+  } catch (_) {}
+}
 
-    console.log(`[USSD] Session: ${sessionId}, Phone: ${phoneNumber}, Text: "${text}"`);
+// Format fare result for USSD (≤182 chars)
+function fareText(from: string, to: string): string {
+  const routes = findRoutes(from, to);
+  if (routes.length === 0) return `No routes found for ${from} to ${to}.\nCheck spelling e.g. CBD, Rongai, Karen.`;
+  const peak = isPeakNow();
+  const r = routes[0];
+  const [lo, hi] = peak ? r.farePeak : r.fareOffPeak;
+  const label = peak ? 'PEAK' : 'OFF-PEAK';
+  return `${r.from}>${r.to} Rt ${r.number}\n${label}: KES ${lo}-${hi}\nOff-peak: ${r.fareOffPeak[0]}-${r.fareOffPeak[1]}\nPeak: ${r.farePeak[0]}-${r.farePeak[1]}`;
+}
 
-    // Normalize phone number
-    const normalizedPhone = phoneNumber.startsWith('+') 
-      ? phoneNumber 
-      : `+254${phoneNumber.replace(/^0/, '')}`;
+// SMS detail — more routes + both fares
+function fareSMS(from: string, to: string): string {
+  const routes = findRoutes(from, to);
+  if (routes.length === 0) return `MatatuPulse: No routes found from ${from} to ${to}.\nDial *384*3133# to try again.`;
+  const peak = isPeakNow();
+  const lines = routes.slice(0, 4).map(r =>
+    `Rt ${r.number} (${r.sacco ?? r.from+'>'+r.to}): off-peak KES ${r.fareOffPeak[0]}-${r.fareOffPeak[1]}, peak KES ${r.farePeak[0]}-${r.farePeak[1]}`
+  );
+  const now = peak ? 'NOW: PEAK — higher fares apply.' : 'NOW: OFF-PEAK — best fares now.';
+  return `MatatuPulse fares ${from}>${to}:\n${lines.join('\n')}\n${now}\nDial *384*3133# for more.`;
+}
 
-    // Parse USSD input
-    const textArray = text ? text.split('*').filter(Boolean) : [];
-    const level = textArray.length;
+// ─── DB init for tables that may be missing ───────────────────────────────────
 
-    // Get or create USSD session
-    let session = await sql`
-      SELECT * FROM ussd_sessions 
-      WHERE session_id = ${sessionId}
-    `;
+async function ensureTables() {
+  try {
+    await sql`CREATE TABLE IF NOT EXISTS commuters (
+      id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      phone_number TEXT NOT NULL UNIQUE,
+      full_name    TEXT,
+      route_id     TEXT,
+      sms_subscribed BOOLEAN DEFAULT true,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )`;
+    await sql`CREATE TABLE IF NOT EXISTS fare_alert_subs (
+      id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      phone_number TEXT NOT NULL,
+      route_number TEXT NOT NULL,
+      created_at   TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(phone_number, route_number)
+    )`;
+  } catch (_) {}
+}
+ensureTables();
 
-    if (session.length === 0) {
-      // Create new session
-      await sql`
-        INSERT INTO ussd_sessions (session_id, phone_number, state, created_at, updated_at)
-        VALUES (${sessionId}, ${normalizedPhone}, 'MAIN', NOW(), NOW())
-      `;
-      session = await sql`
-        SELECT * FROM ussd_sessions 
-        WHERE session_id = ${sessionId}
-      `;
-    } else {
-      // Update session
-      await sql`
-        UPDATE ussd_sessions 
-        SET updated_at = NOW()
-        WHERE session_id = ${sessionId}
-      `;
+// ─── USSD Handler — Africa's Talking *384*3133# ───────────────────────────────
+// Fully STATELESS: all state derived from `text` field, no session DB table.
+// text = '' (main), '1' (fare: ask from), '1*CBD' (fare: ask to),
+//         '1*CBD*Rongai' (fare: respond)
+// Modules: 1=Check Fare, 2=Find Route, 3=Fare Alerts, 4=Report Incident, 5=SOS
+
+router.post('/', async (req, res) => {
+  const { sessionId, phoneNumber, text } = req.body;
+  const p = phone(phoneNumber ?? '');
+  const parts = text ? (text as string).split('*') : [];
+  const lvl = parts.length;
+
+  console.log(`[USSD] ${p} text="${text}"`);
+
+  try {
+    // ── Level 0: main menu ──────────────────────────────────────────────────
+    if (lvl === 0 || text === '') {
+      return ussdReply(res, `CON Karibu MatatuPulse!\n1. Check fare\n2. Find route\n3. Fare alerts\n4. Report incident\n5. Emergency SOS`);
     }
 
-    let response = '';
+    const [m1, m2, m3] = parts;
 
-    switch (level) {
-      case 0:
-        // Main menu
-        response = `CON Karibu NairobiMove MatatuPulse!
-1. Report Traffic
-2. Find Matatu
-3. Report Incident
-4. Emergency SOS
-5. My Account`;
-        break;
-
-      case 1:
-        switch (textArray[0]) {
-          case '1':
-            // Report Traffic
-            response = `CON Report Traffic:
-1. Heavy Traffic
-2. Light Traffic
-3. Clear Road
-4. Accident
-5. Police Check`;
-            break;
-
-          case '2':
-            // Find Matatu
-            response = `CON Find Matatu:
-Enter route number (e.g. 11, 125, 44)`;
-            break;
-
-          case '3':
-            // Report Incident
-            response = `CON Report Incident:
-1. Breakdown
-2. Accident
-3. Police Harassment
-4. Robbery
-5. Other`;
-            break;
-
-          case '4':
-            // Emergency SOS
-            await handleEmergencySOS(normalizedPhone, res);
-            return;
-
-          case '5':
-            // My Account
-            await handleAccountMenu(normalizedPhone, textArray, res);
-            return;
-
-          default:
-            response = `END Invalid selection. Try again.`;
-        }
-        break;
-
-      case 2:
-        if (textArray[0] === '1') {
-          // Traffic report details
-          await handleTrafficReport(normalizedPhone, textArray[1], res);
-          return;
-        } else if (textArray[0] === '2') {
-          // Find matatu by route
-          await handleFindMatatu(normalizedPhone, textArray[1], res);
-          return;
-        } else if (textArray[0] === '3') {
-          // Incident report details
-          await handleIncidentReport(normalizedPhone, textArray[1], res);
-          return;
-        }
-        break;
-
-      default:
-        response = `END Invalid input. Please start again.`;
+    // ── Module 1: Check Fare ────────────────────────────────────────────────
+    if (m1 === '1') {
+      if (lvl === 1) return ussdReply(res, `CON Check fare:\nEnter FROM stage\n(e.g. CBD, Westlands, Karen)`);
+      if (lvl === 2) return ussdReply(res, `CON From ${m2}.\nEnter TO stage\n(e.g. Rongai, Thika, Eastleigh)`);
+      if (lvl === 3) {
+        const info = fareText(m2, m3);
+        await trySMS(p, fareSMS(m2, m3));
+        return ussdReply(res, `END ${info}\nFull details sent by SMS.`);
+      }
     }
 
-    // Set response headers for Africa's Talking USSD
-    res.set('Content-Type', 'text/plain');
-    res.send(response);
-  } catch (error) {
-    console.error('USSD error:', error);
-    res.set('Content-Type', 'text/plain');
-    res.send('END Service temporarily unavailable. Please try again later.');
+    // ── Module 2: Find Route ────────────────────────────────────────────────
+    if (m1 === '2') {
+      if (lvl === 1) return ussdReply(res, `CON Find route:\nEnter FROM stage\n(e.g. CBD, Ngong Road)`);
+      if (lvl === 2) return ussdReply(res, `CON From ${m2}.\nEnter TO stage\n(e.g. Rongai, Karen, Kikuyu)`);
+      if (lvl === 3) {
+        const routes = findRoutes(m2, m3);
+        if (routes.length === 0) {
+          return ussdReply(res, `END No routes found\n${m2} to ${m3}.\nCheck spelling & try again.`);
+        }
+        const peak = isPeakNow();
+        const lines = routes.slice(0, 3).map(r => {
+          const [lo, hi] = peak ? r.farePeak : r.fareOffPeak;
+          return `Rt ${r.number}: KES ${lo}-${hi}`;
+        }).join('\n');
+        await trySMS(p, fareSMS(m2, m3));
+        return ussdReply(res, `END Routes ${m2}>${m3}:\n${lines}\nFull list sent by SMS.`);
+      }
+    }
+
+    // ── Module 3: Fare Alerts ────────────────────────────────────────────────
+    if (m1 === '3') {
+      if (lvl === 1) return ussdReply(res, `CON Fare alerts:\nEnter route number\n(e.g. 111, 125, 23)`);
+      if (lvl === 2) {
+        const routeNum = m2.trim();
+        try {
+          await sql`INSERT INTO fare_alert_subs (phone_number, route_number)
+                    VALUES (${p}, ${routeNum})
+                    ON CONFLICT (phone_number, route_number) DO NOTHING`;
+        } catch (_) {}
+        await trySMS(p,
+          `MatatuPulse: Fare alerts activated for Route ${routeNum}!\nWe'll SMS you when fares change.\nText STOP to 31333 to cancel.\nDial *384*3133# for more.`
+        );
+        return ussdReply(res, `END Alerts ON for Rt ${routeNum}!\nWe'll SMS fare changes.\nText STOP to cancel.`);
+      }
+    }
+
+    // ── Module 4: Report Incident ────────────────────────────────────────────
+    if (m1 === '4') {
+      if (lvl === 1) return ussdReply(res, `CON Report incident:\n1. Accident\n2. Congestion\n3. Police check\n4. Roadworks\n5. Other`);
+      if (lvl === 2) {
+        const types: Record<string, string> = { '1':'accident','2':'congestion','3':'police','4':'roadworks','5':'other' };
+        const type = types[m2] ?? 'other';
+        try {
+          await sql`INSERT INTO incident_reports (phone_number, incident_type, status)
+                    VALUES (${p}, ${type}, 'active')`;
+        } catch (_) {}
+        await trySMS(p, `MatatuPulse: ${type} reported.\nOther commuters on the map will see this.\nThank you for keeping Nairobi safe!`);
+        return ussdReply(res, `END ${type} reported!\nOther commuters notified.\nThank you!`);
+      }
+    }
+
+    // ── Module 5: Emergency SOS ──────────────────────────────────────────────
+    if (m1 === '5') {
+      const contacts = (process.env.EMERGENCY_CONTACTS ?? '').split(',').filter(Boolean);
+      for (const c of contacts) {
+        await trySMS(c.trim(), `EMERGENCY SOS from ${p}!\nMatatuPulse USSD alert.\nPlease call immediately!`);
+      }
+      await trySMS(p, `SOS sent! Emergency contacts have been notified.\nStay calm. Help is coming.\nDial 999 if urgent.`);
+      return ussdReply(res, `END SOS activated!\nEmergency contacts notified.\nStay safe. Dial 999 if needed.`);
+    }
+
+    return ussdReply(res, `END Invalid selection.\nDial *384*3133# to start again.`);
+
+  } catch (err) {
+    console.error('[USSD] Unhandled error:', err);
+    ussdReply(res, `END Service error. Please try again.\nDial *384*3133#`);
   }
 });
-
-async function handleEmergencySOS(phoneNumber: string, res: any) {
-  try {
-    // Create SOS record
-    await sql`
-      INSERT INTO commuter_sos (phone_number, status, created_at)
-      VALUES (${phoneNumber}, 'active', NOW())
-    `;
-
-    // Get user location if available
-    const userResult = await sql`
-      SELECT full_name FROM commuters WHERE phone_number = ${phoneNumber}
-    `;
-
-    const userName = userResult.length > 0 ? userResult[0].full_name : 'Commuter';
-
-    // Send emergency SMS to contacts (if configured)
-    const emergencyContacts = process.env.EMERGENCY_CONTACTS?.split(',') || [];
-    
-    for (const contact of emergencyContacts) {
-      const message = `EMERGENCY SOS: ${userName} (${phoneNumber}) needs immediate help!
-Location: Unknown (user on USSD)
-Please call immediately!`;
-      
-      try {
-        await sendSMS(contact.trim(), message);
-        await logSMS(sql, 'matatu-pulse', 'outbound', contact.trim(), message);
-      } catch (error) {
-        console.error(`Failed to send emergency SMS to ${contact}:`, error);
-      }
-    }
-
-    // Send confirmation to user
-    const confirmationMessage = `SOS activated! Help is on the way.
-Stay calm and safe. Emergency contacts notified.`;
-    
-    try {
-      await sendSMS(phoneNumber, confirmationMessage);
-      await logSMS(sql, 'matatu-pulse', 'outbound', phoneNumber, confirmationMessage);
-    } catch (error) {
-      console.error('Failed to send SOS confirmation:', error);
-    }
-
-    res.set('Content-Type', 'text/plain');
-    res.send('END Emergency SOS activated! Help is on the way. Stay safe.');
-  } catch (error) {
-    console.error('Emergency SOS error:', error);
-    res.set('Content-Type', 'text/plain');
-    res.send('END Failed to activate SOS. Please call emergency services directly.');
-  }
-}
-
-async function handleTrafficReport(phoneNumber: string, trafficType: string, res: any) {
-  try {
-    const trafficLabels = {
-      '1': 'Heavy Traffic',
-      '2': 'Light Traffic', 
-      '3': 'Clear Road',
-      '4': 'Accident',
-      '5': 'Police Check'
-    };
-
-    const label = trafficLabels[trafficType] || 'Unknown';
-    
-    // Create traffic report
-    await sql`
-      INSERT INTO traffic_reports (phone_number, report_type, status, created_at)
-      VALUES (${phoneNumber}, ${label}, 'active', NOW())
-    `;
-
-    // Send confirmation SMS
-    const message = `Thank you! Traffic report received: ${label}.
-This helps other commuters avoid delays.
-Stay safe!`;
-    
-    try {
-      await sendSMS(phoneNumber, message);
-      await logSMS(sql, 'matatu-pulse', 'outbound', phoneNumber, message);
-    } catch (error) {
-      console.error('Failed to send traffic confirmation:', error);
-    }
-
-    res.set('Content-Type', 'text/plain');
-    res.send(`END Traffic report submitted: ${label}. Thank you for helping others!`);
-  } catch (error) {
-    console.error('Traffic report error:', error);
-    res.set('Content-Type', 'text/plain');
-    res.send('END Failed to submit report. Please try again.');
-  }
-}
-
-async function handleFindMatatu(phoneNumber: string, routeNumber: string, res: any) {
-  try {
-    // Find active matatus on this route
-    const matatusResult = await sql`
-      SELECT 
-        v.plate_number,
-        v.driver_name,
-        v.current_location,
-        s.name as stage_name,
-        v.last_updated
-      FROM vehicles v
-      JOIN stages s ON v.current_stage_id = s.id
-      WHERE v.route_number = ${routeNumber.toUpperCase()}
-      AND v.is_active = true
-      AND v.last_updated >= NOW() - INTERVAL '30 minutes'
-      ORDER BY v.last_updated DESC
-      LIMIT 5
-    `;
-
-    if (matatusResult.length === 0) {
-      res.set('Content-Type', 'text/plain');
-      res.send(`END No active matatus found on route ${routeNumber.toUpperCase()}.
-Try again later or check a different route.`);
-      return;
-    }
-
-    // Format response
-    let response = `END Matatus on route ${routeNumber.toUpperCase()}:\n`;
-    matatusResult.forEach((matatu, index) => {
-      response += `${index + 1}. ${matatu.plate_number} - ${matatu.stage_name}\n`;
-      response += `   Driver: ${matatu.driver_name}\n`;
-      response += `   Location: ${matatu.current_location}\n\n`;
-    });
-
-    // Send detailed info via SMS
-    const smsMessage = `MatatuPulse - Route ${routeNumber.toUpperCase()}:
-${matatusResult.map(m => `${m.plate_number} at ${m.stage_name}`).join(', ')}
-Last updated: ${new Date().toLocaleTimeString()}`;
-    
-    try {
-      await sendSMS(phoneNumber, smsMessage);
-      await logSMS(sql, 'matatu-pulse', 'outbound', phoneNumber, smsMessage);
-    } catch (error) {
-      console.error('Failed to send matatu info SMS:', error);
-    }
-
-    res.set('Content-Type', 'text/plain');
-    res.send(response);
-  } catch (error) {
-    console.error('Find matatu error:', error);
-    res.set('Content-Type', 'text/plain');
-    res.send('END Failed to find matatus. Please try again.');
-  }
-}
-
-async function handleIncidentReport(phoneNumber: string, incidentType: string, res: any) {
-  try {
-    const incidentLabels = {
-      '1': 'Breakdown',
-      '2': 'Accident',
-      '3': 'Police Harassment',
-      '4': 'Robbery',
-      '5': 'Other'
-    };
-
-    const label = incidentLabels[incidentType] || 'Unknown';
-    
-    // Create incident report
-    await sql`
-      INSERT INTO incident_reports (phone_number, incident_type, status, created_at)
-      VALUES (${phoneNumber}, ${label}, 'active', NOW())
-    `;
-
-    // Send confirmation SMS
-    const message = `Incident report received: ${label}.
-Thank you for reporting. Authorities will be notified if needed.
-Stay safe!`;
-    
-    try {
-      await sendSMS(phoneNumber, message);
-      await logSMS(sql, 'matatu-pulse', 'outbound', phoneNumber, message);
-    } catch (error) {
-      console.error('Failed to send incident confirmation:', error);
-    }
-
-    res.set('Content-Type', 'text/plain');
-    res.send(`END Incident reported: ${label}. Thank you for keeping others safe!`);
-  } catch (error) {
-    console.error('Incident report error:', error);
-    res.set('Content-Type', 'text/plain');
-    res.send('END Failed to submit report. Please try again.');
-  }
-}
-
-async function handleAccountMenu(phoneNumber: string, textArray: string[], res: any) {
-  try {
-    // Check if user exists
-    const userResult = await sql`
-      SELECT * FROM commuters WHERE phone_number = ${phoneNumber}
-    `;
-
-    if (userResult.length === 0) {
-      // New user - prompt for registration
-      if (textArray.length === 1) {
-        res.set('Content-Type', 'text/plain');
-        res.send(`CON New user detected!
-Enter your full name to register:`);
-        return;
-      } else if (textArray.length === 2) {
-        // Register new user
-        const fullName = textArray[1];
-        await sql`
-          INSERT INTO commuters (phone_number, full_name, created_at)
-          VALUES (${phoneNumber}, ${fullName}, NOW())
-        `;
-
-        const welcomeMessage = `Welcome to MatatuPulse, ${fullName}!
-You can now:
-- Report traffic and incidents
-- Find matatu routes
-- Get emergency help
-Dial *384*3133# anytime to access services.`;
-        
-        try {
-          await sendSMS(phoneNumber, welcomeMessage);
-          await logSMS(sql, 'matatu-pulse', 'outbound', phoneNumber, welcomeMessage);
-        } catch (error) {
-          console.error('Failed to send welcome SMS:', error);
-        }
-
-        res.set('Content-Type', 'text/plain');
-        res.send(`END Registration complete! Welcome ${fullName}. Check your SMS for details.`);
-        return;
-      }
-    } else {
-      // Existing user - show account info
-      const user = userResult[0];
-      const reportsCount = await sql`
-        SELECT COUNT(*) as count FROM traffic_reports 
-        WHERE phone_number = ${phoneNumber}
-      `;
-      
-      res.set('Content-Type', 'text/plain');
-      res.send(`END Account: ${user.full_name}
-Reports: ${reportsCount[0].count}
-Member since: ${user.created_at.toLocaleDateString()}
-Thank you for using MatatuPulse!`);
-      return;
-    }
-  } catch (error) {
-    console.error('Account menu error:', error);
-    res.set('Content-Type', 'text/plain');
-    res.send('END Account service unavailable. Please try again.');
-  }
-}
 
 export default router;
