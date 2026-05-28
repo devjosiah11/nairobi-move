@@ -81,6 +81,10 @@ if (existsSync(distPath)) {
   app.get('*', (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
+} else {
+  app.get('/', (_req, res) => {
+    res.json({ service: 'Registration API', status: 'running', endpoints: { health: '/api/health', registerRider: '/api/register/rider', registerSacco: '/api/register/sacco' } });
+  });
 }
 
 const PORT = process.env.PORT ?? 3003;

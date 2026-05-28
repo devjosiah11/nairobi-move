@@ -63,6 +63,10 @@ if (existsSync(distPath)) {
   app.get('*', (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
+} else {
+  app.get('/', (_req, res) => {
+    res.json({ service: 'FleetPulse (SACCO Dashboard) API', status: 'running', endpoints: { health: '/api/health', vehicles: '/api/vehicles', saccos: '/api/saccos' } });
+  });
 }
 
 // Start reminder cron job

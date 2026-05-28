@@ -89,6 +89,10 @@ if (existsSync(distPath)) {
   app.get('*', (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
+} else {
+  app.get('/', (_req, res) => {
+    res.json({ service: 'BodaDispatch API', status: 'running', endpoints: { health: '/api/health', riders: '/api/riders', trips: '/api/trips' } });
+  });
 }
 
 const PORT = process.env.PORT ?? 3002;
