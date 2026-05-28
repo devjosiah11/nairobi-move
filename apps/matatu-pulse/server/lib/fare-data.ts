@@ -34,13 +34,79 @@ export const ROUTES: Route[] = [
   { id: '34r',  number: '34',   from: 'Githurai',   to: 'CBD',         fareOffPeak: [50, 70],   farePeak: [60, 90],   sacco: 'Githurai SACCO' },
 ];
 
+// Common aliases and misspellings → canonical name
+const ALIASES: Record<string, string> = {
+  'nairobi cbd': 'cbd', 'town': 'cbd', 'nrb': 'cbd', 'city': 'cbd',
+  'rongai': 'rongai', 'rngai': 'rongai', 'rongai town': 'rongai', 'rongai est': 'rongai',
+  'karen': 'karen', 'karin': 'karen', 'karren': 'karen',
+  'westlands': 'westlands', 'westland': 'westlands', 'westi': 'westlands', 'westie': 'westlands',
+  'ngong': 'ngong road', 'ngong rd': 'ngong road', 'ngong road': 'ngong road',
+  'thika': 'thika', 'thika rd': 'thika', 'thika road': 'thika',
+  'eastleigh': 'eastleigh', 'eastley': 'eastleigh', 'eastlea': 'eastleigh',
+  'kasarani': 'kasarani', 'kasrani': 'kasarani',
+  'kawangware': 'kawangware', 'kawang': 'kawangware', 'kawangwre': 'kawangware',
+  'kikuyu': 'kikuyu', 'kikyu': 'kikuyu',
+  'githurai': 'githurai', 'githria': 'githurai', 'githu': 'githurai',
+};
+
+/** Levenshtein distance — tolerates 1-2 character typos */
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function normalisePlace(input: string): string {
+  const s = input.trim().toLowerCase();
+  if (ALIASES[s]) return ALIASES[s];
+  // fuzzy alias match — allow 1 typo on longer words
+  for (const [alias, canonical] of Object.entries(ALIASES)) {
+    if (alias.length > 4 && levenshtein(s, alias) <= 1) return canonical;
+  }
+  return s;
+}
+
 export function findRoutes(from: string, to: string): Route[] {
-  const f = from.trim().toLowerCase();
-  const t = to.trim().toLowerCase();
+  const f = normalisePlace(from);
+  const t = normalisePlace(to);
   if (!f || !t) return [];
-  return ROUTES.filter(
+  // exact/partial match first
+  const exact = ROUTES.filter(
     r => r.from.toLowerCase().includes(f) && r.to.toLowerCase().includes(t)
   );
+  if (exact.length > 0) return exact;
+  // fuzzy fallback — match each stage name with levenshtein ≤ 2
+  return ROUTES.filter(r => {
+    const rf = r.from.toLowerCase();
+    const rt = r.to.toLowerCase();
+    const fMatch = rf.includes(f) || levenshtein(rf, f) <= 2 || f.split(' ').some(w => w.length > 3 && rf.includes(w));
+    const tMatch = rt.includes(t) || levenshtein(rt, t) <= 2 || t.split(' ').some(w => w.length > 3 && rt.includes(w));
+    return fMatch && tMatch;
+  });
+}
+
+/** Returns the closest known place name for display, or original if no match */
+export function suggestPlace(input: string): string {
+  const n = normalisePlace(input);
+  const allPlaces = [...new Set(ROUTES.flatMap(r => [r.from.toLowerCase(), r.to.toLowerCase()]))];
+  if (allPlaces.includes(n)) {
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  // find closest
+  let best = input, bestDist = 99;
+  for (const p of allPlaces) {
+    const d = levenshtein(n, p);
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  if (bestDist <= 3) return best.charAt(0).toUpperCase() + best.slice(1);
+  return input;
 }
 
 /** Peak hours: weekdays 6–10am and 4–8pm EAT */

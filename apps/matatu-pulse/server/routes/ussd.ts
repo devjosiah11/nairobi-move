@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { sql } from '@nairobi-move/db';
 import { sendSMS, logSMS } from '@nairobi-move/utils';
-import { findRoutes, isPeakNow } from '../lib/fare-data.js';
+import { findRoutes, isPeakNow, suggestPlace } from '../lib/fare-data.js';
 
 const router = Router();
 
@@ -67,30 +67,39 @@ router.post('/', (req, res) => {
 
   // Level 0: main menu
   if (lvl === 0 || text === '') {
-    ussdReply(res, `CON Karibu MatatuPulse!\n1. Check fare\n2. Find route\n3. Fare alerts\n4. Report incident\n5. Emergency SOS`);
+    ussdReply(res, `CON Karibu MatatuPulse!\n1. Check fare\n2. Find route\n3. Fare alerts\n4. Report incident`);
     return;
   }
 
   // ── Module 1: Check Fare ──────────────────────────────────────────────────
   if (m1 === '1') {
-    if (lvl === 1) { ussdReply(res, `CON Check fare:\nEnter FROM stage\n(e.g. CBD, Westlands, Karen)`); return; }
-    if (lvl === 2) { ussdReply(res, `CON From ${m2}.\nEnter TO stage\n(e.g. Rongai, Thika, Eastleigh)`); return; }
+    if (lvl === 1) { ussdReply(res, `CON Check fare:\nEnter FROM stage\ne.g. CBD, Westlands, Karen`); return; }
+    if (lvl === 2) {
+      const suggested = suggestPlace(m2);
+      ussdReply(res, `CON From ${suggested}.\nEnter TO stage\ne.g. Rongai, Thika, Eastleigh`);
+      return;
+    }
     if (lvl === 3) {
       const info = fareText(m2, m3);
       ussdReply(res, `END ${info}\nSMS with full details sent.`);
-      trySMS(p, fareSMS(m2, m3)); // fire-and-forget after reply
+      trySMS(p, fareSMS(m2, m3));
       return;
     }
   }
 
   // ── Module 2: Find Route ──────────────────────────────────────────────────
   if (m1 === '2') {
-    if (lvl === 1) { ussdReply(res, `CON Find route:\nEnter FROM stage\n(e.g. CBD, Ngong Road)`); return; }
-    if (lvl === 2) { ussdReply(res, `CON From ${m2}.\nEnter TO stage\n(e.g. Rongai, Karen, Kikuyu)`); return; }
+    if (lvl === 1) { ussdReply(res, `CON Find route:\nEnter FROM stage\ne.g. CBD, Ngong Road`); return; }
+    if (lvl === 2) {
+      const suggested = suggestPlace(m2);
+      ussdReply(res, `CON From ${suggested}.\nEnter TO stage\ne.g. Rongai, Karen, Kikuyu`);
+      return;
+    }
     if (lvl === 3) {
       const routes = findRoutes(m2, m3);
       if (routes.length === 0) {
-        ussdReply(res, `END No routes found\n${m2} to ${m3}.\nCheck spelling & try again.`);
+        const sug = suggestPlace(m3);
+        ussdReply(res, `END No routes found.\nDid you mean ${sug}?\nDial *384*3133# & try again.`);
         return;
       }
       const peak = isPeakNow();
@@ -98,8 +107,8 @@ router.post('/', (req, res) => {
         const [lo, hi] = peak ? r.farePeak : r.fareOffPeak;
         return `Rt ${r.number}: KES ${lo}-${hi}`;
       }).join('\n');
-      ussdReply(res, `END Routes ${m2}>${m3}:\n${lines}\nFull list sent by SMS.`);
-      trySMS(p, fareSMS(m2, m3)); // fire-and-forget
+      ussdReply(res, `END Routes ${suggestPlace(m2)}>${suggestPlace(m3)}:\n${lines}\nFull list sent by SMS.`);
+      trySMS(p, fareSMS(m2, m3));
       return;
     }
   }
@@ -120,28 +129,27 @@ router.post('/', (req, res) => {
   }
 
   // ── Module 4: Report Incident ─────────────────────────────────────────────
+  // Flow: 4 → type → location → saved
   if (m1 === '4') {
-    if (lvl === 1) { ussdReply(res, `CON Report incident:\n1. Accident\n2. Congestion\n3. Police check\n4. Roadworks\n5. Other`); return; }
-    if (lvl === 2) {
-      const types: Record<string, string> = { '1':'accident','2':'congestion','3':'police','4':'roadworks','5':'other' };
-      const type = types[m2] ?? 'other';
-      ussdReply(res, `END ${type} reported!\nOther commuters notified.\nThank you!`);
-      // DB write + SMS after reply
-      sql`INSERT INTO incident_reports (phone_number, incident_type, status)
-          VALUES (${p}, ${type}, 'active')`.catch(() => {});
-      trySMS(p, `MatatuPulse: ${type} reported. Other commuters on the map will see this. Thank you!`);
+    if (lvl === 1) {
+      ussdReply(res, `CON Report incident:\n1. Accident\n2. Congestion\n3. Police check\n4. Roadworks\n5. Other`);
       return;
     }
-  }
-
-  // ── Module 5: Emergency SOS ───────────────────────────────────────────────
-  if (m1 === '5') {
-    ussdReply(res, `END SOS activated!\nEmergency contacts notified.\nStay safe. Dial 999 if needed.`);
-    // SMS after reply
-    const contacts = (process.env.EMERGENCY_CONTACTS ?? '').split(',').filter(Boolean);
-    contacts.forEach(c => trySMS(c.trim(), `EMERGENCY SOS from ${p}!\nMatatuPulse USSD alert.\nPlease call immediately!`));
-    trySMS(p, `SOS sent! Emergency contacts notified.\nStay calm. Dial 999 if urgent.`);
-    return;
+    if (lvl === 2) {
+      ussdReply(res, `CON Enter location:\nUse landmark & road\ne.g. Odeon Cinema Moi Ave\nor Rongai Stage Langata Rd`);
+      return;
+    }
+    if (lvl === 3) {
+      const types: Record<string, string> = { '1':'accident','2':'congestion','3':'police check','4':'roadworks','5':'other' };
+      const type = types[m2] ?? 'other';
+      const location = m3 ?? '';
+      ussdReply(res, `END ${type} at ${location} reported!\nVisible to all commuters on map.\nAsante!`);
+      // fire-and-forget after reply
+      sql`INSERT INTO incident_reports (phone_number, incident_type, description, status)
+          VALUES (${p}, ${type}, ${location}, 'active')`.catch(() => {});
+      trySMS(p, `MatatuPulse: ${type} reported at ${location}.\nOther commuters can see this on the map. Thank you!`);
+      return;
+    }
   }
 
   ussdReply(res, `END Invalid selection.\nDial *384*3133# to start again.`);
