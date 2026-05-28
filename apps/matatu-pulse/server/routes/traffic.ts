@@ -110,7 +110,7 @@ router.get('/map-data', async (_req, res) => {
         ORDER BY created_at DESC LIMIT 20
       `;
       incidents = rows.length > 0
-        ? rows.map((i: any) => ({ id: i.id, lat: i.lat, lng: i.lng, type: i.type, description: i.description, reported_at: i.created_at, time_ago: timeAgo(i.created_at) }))
+        ? rows.map((i: any) => ({ id: i.id, lat: Number(i.lat), lng: Number(i.lng), type: i.type, description: i.description, reported_at: i.created_at, time_ago: timeAgo(i.created_at) }))
         : demoIncidents();
     } catch (_) {
       incidents = demoIncidents();
@@ -139,7 +139,8 @@ router.post('/report', async (req, res) => {
       VALUES (${lat}, ${lng}, ${type}, ${description || ''}, ${phone_number || 'anonymous'}, 'active')
       RETURNING id, lat::float, lng::float, incident_type AS type, description
     `;
-    res.json({ success: true, incident: { ...rows[0], time_ago: 'just now' } });
+    const row = rows[0];
+    res.json({ success: true, incident: { ...row, lat: Number(row.lat), lng: Number(row.lng), time_ago: 'just now' } });
   } catch (error) {
     console.error('Report incident error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -162,7 +163,7 @@ router.get('/incidents', async (_req, res) => {
       LIMIT 100
     `;
     const incidents = rows.map((i: any) => ({
-      id: i.id, lat: i.lat, lng: i.lng,
+      id: i.id, lat: Number(i.lat), lng: Number(i.lng),
       type: i.type, description: i.description,
       status: i.status,
       reported_at: i.created_at,
