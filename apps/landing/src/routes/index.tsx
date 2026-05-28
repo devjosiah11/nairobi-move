@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowRight, Phone, MessageSquare, Gauge, Radio,
+  Phone, MessageSquare, Gauge, Radio,
   Wallet, Headphones, CheckCircle2, AlertTriangle, MapPin, Users,
-  Bike, Bus, Sparkles, ArrowDown, Mail, Twitter, Linkedin, Github,
+  Bus, Sparkles, ArrowDown, Mail, Twitter, Linkedin, Github, ExternalLink,
 } from "lucide-react";
 
 type LiveStats = { totalVehicles: number; totalRoutes: number; totalStages: number };
@@ -40,9 +40,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "NairobiMove — Smarter movement for every Kenyan" },
-      { name: "description", content: "Real-time matatu fares, SACCO compliance, and boda rider safety — over SMS, USSD and web. Built on Africa's Talking APIs." },
+      { name: "description", content: "Real-time matatu fares and SACCO fleet compliance — over SMS, USSD and web. Built on Africa's Talking APIs." },
       { property: "og:title", content: "NairobiMove — Smarter movement for every Kenyan" },
-      { property: "og:description", content: "Real-time matatu fares, SACCO compliance, and boda rider safety — over SMS, USSD and web." },
+      { property: "og:description", content: "Real-time matatu fares and SACCO fleet compliance — over SMS, USSD and web." },
     ],
   }),
   component: Index,
@@ -95,8 +95,8 @@ function Nav() {
           <a href="#pricing" className="hover:text-white transition">Pricing</a>
         </nav>
         <div className="flex items-center gap-3">
-          <a href="#pricing" className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-green px-4 py-2 text-sm font-semibold text-white hover:bg-green-2 transition">
-            Get Started <ArrowRight className="h-4 w-4" />
+          <a href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'} target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-green px-4 py-2 text-sm font-semibold text-white hover:bg-green-2 transition">
+            Open App <ExternalLink className="h-4 w-4" />
           </a>
         </div>
       </div>
@@ -199,34 +199,6 @@ function FleetDashboard() {
   );
 }
 
-function SmsThread() {
-  return (
-    <div className="relative mx-auto w-[300px] float-slow">
-      <div className="absolute -inset-6 rounded-[3rem] bg-gradient-to-tr from-coral/30 via-green/15 to-transparent blur-2xl" />
-      <div className="relative rounded-[2.2rem] border border-white/10 bg-gradient-to-b from-[#1b2434] to-[#0c1322] p-3 shadow-2xl">
-        <div className="rounded-[1.6rem] bg-[#0a0f1a] p-4 min-h-[440px]">
-          <div className="text-center text-white/40 text-xs mb-3">SMS · 22384</div>
-          <div className="space-y-2.5 text-[13px]">
-            <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-white/10 text-white px-3 py-2">
-              BODA to Yaya Centre from Kilimani
-            </div>
-            <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-green text-white px-3 py-2">
-              Rider John (KMEC 221) accepting. ETA 4 min. Reply OK to confirm.
-            </div>
-            <div className="max-w-[40%] rounded-2xl rounded-bl-sm bg-white/10 text-white px-3 py-2">OK</div>
-            <div className="ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-green/90 text-white px-3 py-2">
-              Trip started. Fare KES 150. Reply SOS at any time for emergency.
-            </div>
-            <div className="ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-amber text-navy font-medium px-3 py-2">
-              Trip complete. KES 20 airtime credited to John.
-            </div>
-          </div>
-        </div>
-        <div className="mx-auto mt-3 h-1 w-16 rounded-full bg-white/15" />
-      </div>
-    </div>
-  );
-}
 
 function Index() {
   const ref = useReveal();
@@ -250,15 +222,15 @@ function Index() {
               </div>
               <h1 className="font-display mt-6 text-5xl sm:text-6xl lg:text-[72px] leading-[1.02] font-bold tracking-tight">
                 Every matatu. <br />
-                Every boda. <br />
+                Every SACCO. <br />
                 <span className="text-green">Every route.</span> Connected.
               </h1>
               <p className="mt-7 text-lg text-white/70 max-w-xl leading-relaxed">
-                NairobiMove brings real-time fares, fleet compliance, and rider safety to Kenya's transport ecosystem — via SMS, USSD, and the web.
+                NairobiMove brings real-time fares and fleet compliance to Kenya's transport ecosystem — via SMS, USSD, and the web.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <a href="#pricing" className="inline-flex items-center gap-2 rounded-full bg-green px-6 py-3.5 text-base font-semibold hover:bg-green-2 transition shadow-lg shadow-green/20">
-                  Get Started Free <ArrowRight className="h-5 w-5" />
+                <a href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-green px-6 py-3.5 text-base font-semibold hover:bg-green-2 transition shadow-lg shadow-green/20">
+                  Open MatatuPulse <ExternalLink className="h-5 w-5" />
                 </a>
                 <a href="#how" className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3.5 text-base font-semibold hover:bg-white/5 transition">
                   See How It Works
@@ -267,7 +239,7 @@ function Index() {
               <div className="mt-10 flex flex-wrap gap-3">
                 <StatPill><MapPin className="h-4 w-4 text-green" /> {stats.totalRoutes}+ matatu routes mapped</StatPill>
                 <StatPill><Gauge className="h-4 w-4 text-amber" /> {stats.totalVehicles}+ vehicles tracked</StatPill>
-                <StatPill><Sparkles className="h-4 w-4 text-white" /> {stats.totalStages}+ stages covered</StatPill>
+                <StatPill><Phone className="h-4 w-4 text-white" /> Dial *384*3133# — no app needed</StatPill>
               </div>
             </div>
 
@@ -296,11 +268,10 @@ function Index() {
               <span className="text-white/50">Most of them are flying blind.</span>
             </h2>
           </div>
-          <div className="mt-16 grid md:grid-cols-3 gap-6">
+          <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-3xl">
             {[
               { icon: Users, accent: "text-green", who: "Commuters", line: "You don't know the fare until you're already on the matatu." },
               { icon: Bus, accent: "text-amber", who: "SACCO Owners", line: "NTSA fines hit because paper reminders get lost." },
-              { icon: Bike, accent: "text-coral", who: "Boda Riders", line: "Accidents happen with no emergency alert system." },
             ].map((c, i) => (
               <div key={i} className="reveal group relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-8 hover:border-white/20 transition">
                 <c.icon className={`h-9 w-9 ${c.accent}`} />
@@ -322,13 +293,14 @@ function Index() {
         eyebrowColor="text-blue-accent"
         accentRing="ring-blue-accent/40"
         title="Know your fare before you board."
-        body="Dial *384# on any phone — feature phone or smartphone — and get accurate matatu fares, boarding stages, and route info in seconds. No app. No data. No guessing."
+        body="Dial *384*3133# on any phone — feature phone or smartphone — and get accurate matatu fares, boarding stages, and route info in seconds. No app. No data. No guessing."
         bullets={[
           "Works on all Safaricom & Airtel numbers",
           "Real-time fare range (peak & off-peak)",
           "SMS confirmation sent to your phone",
-          "Subscribe to route alerts",
+          "Subscribe to route fare alerts",
         ]}
+        cta={{ label: "Open MatatuPulse", href: import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app' }}
         visual={<UssdPhone />}
         flip={false}
       />
@@ -347,28 +319,10 @@ function Index() {
           "Escalation voice call if no response",
           "Web dashboard for full fleet visibility",
         ]}
+        cta={{ label: "Open FleetPulse", href: import.meta.env.VITE_SACCO_API_URL?.replace(':3001','') ?? 'https://sacco-production-1ad8.up.railway.app' }}
         visual={<FleetDashboard />}
         flip
         bg="bg-navy"
-      />
-
-      {/* BODADISPATCH */}
-      <ModuleSection
-        id="bodadispatch"
-        eyebrow="Module 03 · BodaDispatch"
-        eyebrowColor="text-coral"
-        accentRing="ring-coral/40"
-        title="Safer rides. Smarter dispatch. One SMS away."
-        body="Passengers book the nearest boda rider by SMS. Riders earn airtime rewards per trip. And if anything goes wrong — one SOS text alerts emergency contacts instantly."
-        bullets={[
-          "Passenger books via SMS",
-          "Rider gets booking notification",
-          "SOS triggers voice call to next-of-kin",
-          "Airtime reward on trip completion",
-        ]}
-        visual={<SmsThread />}
-        flip={false}
-        bg="bg-navy-2"
       />
 
       {/* HOW IT WORKS */}
@@ -436,10 +390,10 @@ function Index() {
 
           <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { icon: MessageSquare, name: "SMS API", line: "Fare confirmations, booking threads, compliance reminders." },
-              { icon: Radio, name: "USSD API", line: "The *384# experience that runs on any handset." },
-              { icon: Headphones, name: "Voice API", line: "Auto-escalation calls and SOS dispatch to next-of-kin." },
-              { icon: Wallet, name: "Airtime API", line: "Instant airtime rewards to boda riders per completed trip." },
+              { icon: MessageSquare, name: "SMS API", line: "Fare confirmations, incident alerts, and compliance reminders." },
+              { icon: Radio, name: "USSD API", line: "The *384*3133# experience that runs on any handset." },
+              { icon: Headphones, name: "Voice API", line: "Auto-escalation calls when SACCO drivers don't confirm." },
+              { icon: Wallet, name: "Airtime API", line: "Instant airtime rewards for commuters who report incidents." },
             ].map((a) => (
               <div key={a.name} className="reveal rounded-2xl border border-white/10 bg-white/[0.03] p-6 hover:border-amber/40 hover:bg-white/[0.05] transition">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber/30 to-green/20 flex items-center justify-center">
@@ -464,18 +418,20 @@ function Index() {
             </h2>
           </div>
 
-          <div className="mt-16 grid md:grid-cols-3 gap-6">
+          <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-3xl">
             <PricingCard
               name="Commuter"
               price="Free"
               priceNote="Forever"
               icon={Users}
               features={[
-                "Access MatatuPulse USSD (*384#)",
-                "SMS fare alerts",
-                "Route lookup & schedules",
+                "Dial *384*3133# on any phone",
+                "Real-time fare range (peak & off-peak)",
+                "SMS fare confirmation",
+                "Subscribe to route alerts",
               ]}
-              cta="Dial *384# now"
+              cta="Open MatatuPulse"
+              href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'}
             />
             <PricingCard
               name="SACCO / Fleet"
@@ -489,19 +445,8 @@ function Index() {
                 "Voice escalation on no-response",
                 "Driver confirmations & audit log",
               ]}
-              cta="Start free 30-day trial"
-            />
-            <PricingCard
-              name="Boda Rider"
-              price="Free"
-              priceNote="Earn as you ride"
-              icon={Bike}
-              features={[
-                "Dispatch via SMS",
-                "SOS protection",
-                "Airtime rewards per trip",
-              ]}
-              cta="Register by SMS"
+              cta="Open FleetPulse"
+              href={import.meta.env.VITE_SACCO_API_URL?.replace(':3001','') ?? 'https://sacco-production-1ad8.up.railway.app'}
             />
           </div>
         </div>
@@ -515,10 +460,15 @@ function Index() {
               Smarter movement for every Kenyan.
             </h3>
             <p className="mt-4 text-white/70 max-w-xl mx-auto">
-              From the matatu stage to the boda rank — try NairobiMove without downloading a thing.
+              Check fares, report incidents, and track your fleet — all without downloading a thing.
             </p>
-            <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-green/40 bg-green/10 px-6 py-3 font-mono text-lg">
-              <Phone className="h-5 w-5 text-green" /> Dial <span className="text-green font-bold">*384#</span> on any Kenyan number
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <div className="inline-flex items-center gap-3 rounded-full border border-green/40 bg-green/10 px-6 py-3 font-mono text-lg">
+                <Phone className="h-5 w-5 text-green" /> Dial <span className="text-green font-bold">*384*3133#</span>
+              </div>
+              <a href={import.meta.env.VITE_MATATU_API_URL?.replace(':3004','') ?? 'https://matatu-pulse-production.up.railway.app'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-green px-6 py-3 font-semibold hover:bg-green-2 transition">
+                Open MatatuPulse <ExternalLink className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </div>
@@ -537,7 +487,7 @@ function Index() {
                 <Sparkles className="h-3.5 w-3.5 text-amber" /> Built with Africa's Talking APIs
               </div>
             </div>
-            <FooterCol title="Products" links={["MatatuPulse", "FleetPulse", "BodaDispatch"]} />
+            <FooterCol title="Products" links={["MatatuPulse", "FleetPulse"]} />
             <FooterCol title="Account" links={["Register", "Dashboard", "Pricing"]} />
             <div className="md:col-span-2">
               <div className="text-xs uppercase tracking-widest text-white/40">Contact</div>
@@ -553,7 +503,7 @@ function Index() {
           </div>
           <div className="mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
             <div>© {new Date().getFullYear()} NairobiMove. Made in Nairobi.</div>
-            <div>Dial <span className="text-white/80 font-mono">*384#</span> on any Kenyan number to try it now.</div>
+            <div>Dial <span className="text-white/80 font-mono">*384*3133#</span> on any Kenyan number to try it now.</div>
           </div>
         </div>
       </footer>
@@ -575,15 +525,16 @@ function FooterCol({ title, links }: { title: string; links: string[] }) {
 }
 
 function ModuleSection({
-  id, eyebrow, eyebrowColor, accentRing, title, body, bullets, visual, flip, bg = "bg-navy-2",
+  id, eyebrow, eyebrowColor, accentRing, title, body, bullets, visual, flip, bg = "bg-navy-2", cta,
 }: {
   id: string; eyebrow: string; eyebrowColor: string; accentRing: string;
   title: string; body: string; bullets: string[]; visual: React.ReactNode; flip: boolean; bg?: string;
+  cta?: { label: string; href: string };
 }) {
   return (
     <section id={id} className={`relative py-28 ${bg}`}>
       <div className="max-w-7xl mx-auto px-6">
-        <div className={`grid lg:grid-cols-12 gap-16 items-center ${flip ? "" : ""}`}>
+        <div className={`grid lg:grid-cols-12 gap-16 items-center`}>
           <div className={`lg:col-span-6 reveal ${flip ? "lg:order-2" : ""}`}>
             <div className={`font-mono text-sm uppercase tracking-widest ${eyebrowColor}`}>{eyebrow}</div>
             <h2 className="mt-4 font-display text-4xl sm:text-5xl lg:text-[56px] font-bold leading-[1.05]">
@@ -598,6 +549,12 @@ function ModuleSection({
                 </li>
               ))}
             </ul>
+            {cta && (
+              <a href={cta.href} target="_blank" rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-5 py-2.5 text-sm font-semibold hover:bg-white/20 transition">
+                {cta.label} <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
           </div>
           <div className={`lg:col-span-6 reveal ${flip ? "lg:order-1" : ""}`}>
             <div className={`relative rounded-3xl p-6 sm:p-10 ring-1 ${accentRing} bg-gradient-to-br from-white/[0.04] to-transparent`}>
@@ -611,9 +568,9 @@ function ModuleSection({
 }
 
 function PricingCard({
-  name, price, priceNote, icon: Icon, features, cta, popular,
+  name, price, priceNote, icon: Icon, features, cta, href, popular,
 }: {
-  name: string; price: string; priceNote: string; icon: any; features: string[]; cta: string; popular?: boolean;
+  name: string; price: string; priceNote: string; icon: any; features: string[]; cta: string; href: string; popular?: boolean;
 }) {
   return (
     <div className={`reveal relative rounded-2xl border p-8 flex flex-col ${popular ? "border-green/60 bg-gradient-to-b from-green/10 to-transparent" : "border-white/10 bg-white/[0.03]"}`}>
@@ -639,8 +596,9 @@ function PricingCard({
           </li>
         ))}
       </ul>
-      <a href="#" className={`mt-8 inline-flex justify-center items-center gap-2 rounded-full px-5 py-3 font-semibold transition ${popular ? "bg-green hover:bg-green-2" : "bg-white text-navy hover:bg-white/90"}`}>
-        {cta} <ArrowRight className="h-4 w-4" />
+      <a href={href} target="_blank" rel="noopener noreferrer"
+        className={`mt-8 inline-flex justify-center items-center gap-2 rounded-full px-5 py-3 font-semibold transition ${popular ? "bg-green hover:bg-green-2" : "bg-white text-navy hover:bg-white/90"}`}>
+        {cta} <ExternalLink className="h-4 w-4" />
       </a>
     </div>
   );
