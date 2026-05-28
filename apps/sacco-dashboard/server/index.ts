@@ -60,6 +60,25 @@ app.use('/api/stats', statsRouter);
 app.use('/api/ussd', ussdRouter);
 app.use('/api/fleet-sms', smsIncomingRouter);
 
+// Debug: test SMS send — GET /api/debug/sms
+app.get('/api/debug/sms', async (req, res) => {
+  const to = '+254740717201';
+  const sender = process.env.AT_SENDER_ID || process.env.AT_SHORTCODE;
+  const username = process.env.AT_USERNAME;
+  const apiKey = process.env.AT_API_KEY?.slice(0, 12) + '...';
+  try {
+    const { atSMS } = await import('@nairobi-move/utils');
+    const result = await (atSMS as any).send({
+      to: [to],
+      message: 'FleetPulse debug: SMS working!',
+      from: sender,
+    });
+    res.json({ ok: true, result, sender, username, apiKey });
+  } catch (e: any) {
+    res.json({ ok: false, error: e?.message, sender, username, apiKey, stack: e?.response?.data ?? e?.stack?.slice(0, 400) });
+  }
+});
+
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ 
