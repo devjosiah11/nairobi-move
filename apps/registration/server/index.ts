@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 // Import routes
@@ -15,10 +16,17 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // CORS configuration - open for public registration
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [
+      process.env.FRONTEND_URL || 'https://registeration-production.up.railway.app',
+      'https://matatu-pulse-production.up.railway.app',
+      'https://sacco-production-1ad8.up.railway.app',
+      'https://boda-dispach-production.up.railway.app',
+    ]
+  : ['http://localhost:5175', 'http://localhost:3003', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5176'];
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'https://registration.up.railway.app']
-    : ['http://localhost:5175', 'http://localhost:3003'],
+  origin: allowedOrigins,
   credentials: true
 };
 
@@ -66,13 +74,12 @@ app.get('/api/stats/public', async (_req, res) => {
   }
 });
 
-// In production, serve Vite dist folder
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
-  
-  // Catch-all handler: return index.html for any non-API routes
+// Serve frontend (production: from dist/, dev: Vite handles it)
+const distPath = path.join(__dirname, '../dist');
+if (existsSync(distPath)) {
+  app.use(express.static(distPath));
   app.get('*', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
