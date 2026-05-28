@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight, Phone, MessageSquare, Gauge, Radio,
   Wallet, Headphones, CheckCircle2, AlertTriangle, MapPin, Users,
-  Bus, Sparkles, ArrowDown, Mail, Twitter, Linkedin, Github, ExternalLink,
+  Bus, Sparkles, ArrowDown, Mail, Twitter, Linkedin, Github, ExternalLink, Receipt,
 } from "lucide-react";
 
 type LiveStats = { totalVehicles: number; totalRoutes: number; totalStages: number };
@@ -417,7 +417,7 @@ function Index() {
             </h2>
           </div>
 
-          <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-3xl">
+          <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* MatatuPulse card */}
             <div className="reveal relative rounded-2xl border border-blue-accent/40 bg-gradient-to-b from-blue-accent/10 to-transparent p-8 flex flex-col gap-6">
               <div className="flex items-center gap-3">
@@ -456,6 +456,18 @@ function Index() {
                 </a>
                 <UssdSimulatorButton code="*384*3138#" label="Try USSD *384*3138#" color="amber" />
               </div>
+            </div>
+
+            {/* Waybill card */}
+            <div className="reveal relative rounded-2xl border border-purple-400/40 bg-gradient-to-b from-purple-400/10 to-transparent p-8 flex flex-col gap-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-white/5 flex items-center justify-center">
+                  <Receipt className="h-5 w-5 text-white" />
+                </div>
+                <div className="font-display text-xl font-semibold">Waybill</div>
+              </div>
+              <p className="text-white/60 text-sm">Real-time cash audit for matatu SACCOs. Conductors log trips via USSD. Passengers verify fares by SMS and earn airtime. Leakage is visible — by vehicle, by conductor, by day.</p>
+              <UssdSimulatorButton code="*384*50151#" label="Try USSD *384*50151#" color="purple" />
             </div>
           </div>
         </div>
@@ -584,12 +596,12 @@ function ModuleSection({
   );
 }
 
-function UssdSimulatorButton({ code = '*384*3133#', label, color = 'green' }: { code?: string; label?: string; color?: 'green' | 'amber' }) {
+function UssdSimulatorButton({ code = '*384*3133#', label, color = 'green' }: { code?: string; label?: string; color?: 'green' | 'amber' | 'purple' }) {
   const [open, setOpen] = useState(false);
-  const borderCls = color === 'amber' ? 'border-amber/40 bg-amber/10 hover:bg-amber/20' : 'border-green/40 bg-green/10 hover:bg-green/20';
-  const iconCls   = color === 'amber' ? 'text-amber' : 'text-green';
-  const codeCls   = color === 'amber' ? 'text-amber font-bold' : 'text-green font-bold';
-  const linkCls   = color === 'amber' ? 'text-amber underline underline-offset-2' : 'text-green underline underline-offset-2';
+  const borderCls = color === 'amber' ? 'border-amber/40 bg-amber/10 hover:bg-amber/20' : color === 'purple' ? 'border-purple-400/40 bg-purple-400/10 hover:bg-purple-400/20' : 'border-green/40 bg-green/10 hover:bg-green/20';
+  const iconCls   = color === 'amber' ? 'text-amber' : color === 'purple' ? 'text-purple-400' : 'text-green';
+  const codeCls   = color === 'amber' ? 'text-amber font-bold' : color === 'purple' ? 'text-purple-400 font-bold' : 'text-green font-bold';
+  const linkCls   = color === 'amber' ? 'text-amber underline underline-offset-2' : color === 'purple' ? 'text-purple-400 underline underline-offset-2' : 'text-green underline underline-offset-2';
   const displayLabel = label ?? `Try USSD ${code}`;
   return (
     <div className="relative">
